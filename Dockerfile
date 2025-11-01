@@ -1,32 +1,51 @@
-# Use Node.js 18 Alpine as base image
-FROM node:18-alpine
+# 1️⃣ Use Node.js 18 Alpine as the base image
+FROM node:18-alpine AS builder
 
-# Set working directory
+# 2️⃣ Set working directory
 WORKDIR /app
 
-# Copy package files
+# 3️⃣ Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# 4️⃣ Install ALL dependencies (including dev)
+RUN npm ci
 
-# Copy source code
+# 5️⃣ Copy source code
 COPY . .
 
-# Build TypeScript
+# 6️⃣ Build TypeScript -> dist/
 RUN npm run build
 
-# Create uploads directory
-RUN mkdir -p uploads/thumbnails
+# 7️⃣ Remove dev dependencies (keeps only production)
+RUN npm prune --production
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# 8️⃣ Create uploads directory
+RUN mkdir -p dist/uploads/thumbnails
 
-# Change ownership of uploads directory
-RUN chown -R nodejs:nodejs uploads
+# 9️⃣ Create non-root user
+RUN addgroup -g 1001 -S nodejs \
+ && adduser -S nodejs -u 1001 \
+ && chown -R nodejs:nodejs /app
 
-# Switch to non-root user
+# 10️⃣ Use a clean, lightweight final image
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy production node_modules and built files
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy any public assets (optional)
+# COPY --from=builder /app/uploads ./uploads
+
+# Create uploads directory for runtime
+RUN mkdir -p dist/uploads/thumbnails \
+ && addgroup -g 1001 -S nodejs \
+ && adduser -S nodejs -u 1001 \
+ && chown -R nodejs:nodejs /app
+
 USER nodejs
 
 # Expose port
@@ -34,7 +53,7 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/api/health || exit 1
+  CMD wget -qO- http://localhost:5000/api/health || exit 1
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
