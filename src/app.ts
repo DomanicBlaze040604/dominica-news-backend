@@ -33,7 +33,10 @@ import { adminRoutes } from './routes/admin';
 import { imageRoutes } from './routes/images';
 import healthRoutes from './routes/health';
 
+import { debugRoutes } from './routes/debug';
+
 app.use('/api', healthRoutes);
+app.use('/api/debug', debugRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/articles', articleRoutes);
