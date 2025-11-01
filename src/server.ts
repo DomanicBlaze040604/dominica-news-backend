@@ -7,8 +7,10 @@ const startServer = async (): Promise<void> => {
     // Connect to database
     await connectDatabase();
 
+    // ✅ Ensure port is always a number
+    const port = Number(process.env.PORT) || Number(config.port) || 5000;
+
     // Start server
-    const port = process.env.PORT || config.port;
     const server = app.listen(port, '0.0.0.0', () => {
       console.log(`🚀 Dominica News API running in ${config.nodeEnv} mode on port ${port}`);
     });
@@ -36,7 +38,7 @@ const startServer = async (): Promise<void> => {
     });
 
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };
