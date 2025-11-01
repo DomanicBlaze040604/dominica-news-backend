@@ -9,7 +9,7 @@ const startServer = async (): Promise<void> => {
 
     // Start server
     const server = app.listen(config.port, () => {
-      console.log(`Server running in ${config.nodeEnv} mode on port ${config.port}`);
+      console.log(`🚀 Dominica News API running in ${config.nodeEnv} mode on port ${config.port}`);
     });
 
     // Handle unhandled promise rejections
