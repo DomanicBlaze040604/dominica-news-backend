@@ -34,9 +34,11 @@ import { imageRoutes } from './routes/images';
 import healthRoutes from './routes/health';
 
 import { debugRoutes } from './routes/debug';
+import { testDbRoutes } from './routes/test-db';
 
 app.use('/api', healthRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/test', testDbRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/articles', articleRoutes);
