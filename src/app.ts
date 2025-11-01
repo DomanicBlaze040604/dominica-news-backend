@@ -6,20 +6,26 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 
 const app = express();
 
-// Security middleware
+// ✅ 1. CORS configuration — Allow all origins (for now)
+app.use(
+  cors({
+    origin: '*', // 👈 Allow all frontend URLs
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// ✅ 2. Security middleware
 app.use(helmetConfig);
 app.use(securityHeaders);
-app.use(cors());
 app.use(rateLimiter);
 app.use(sanitizeInput);
 
-// Body parsing middleware
+// ✅ 3. Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files (removed - now handled by image routes)
-
-// API routes
+// ✅ 4. API routes
 import { authRoutes } from './routes/auth';
 import { categoryRoutes } from './routes/categories';
 import { articleRoutes } from './routes/articles';
@@ -34,7 +40,7 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/images', imageRoutes);
 
-// Error handling middleware
+// ✅ 5. Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
