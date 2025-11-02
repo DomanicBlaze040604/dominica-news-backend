@@ -43,7 +43,7 @@ const seedAdmin = async (): Promise<void> => {
     // 🧩 Create new admin
     const newAdmin = new User({
       email: adminEmail,
-      passwordHash: adminPassword, // handled by pre-save middleware
+      password: adminPassword, // handled by pre-save middleware
       fullName: adminName,
       role: 'admin',
     });
