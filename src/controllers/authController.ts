@@ -4,54 +4,57 @@ import { User } from '../models/User';
 import { generateToken } from '../utils/jwt';
 import { CustomError, asyncHandler } from '../middleware/errorHandler';
 
+// 🧩 Register a new user
 export const register = asyncHandler(async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  const { email, password, fullName } = req.body;
 
-    const { email, password, fullName } = req.body;
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new CustomError('User already exists with this email', 409);
+  }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      throw new CustomError('User already exists with this email', 409);
-    }
+  // 🧠 Assign role based on environment admin or default user
+  const isAdmin = email === process.env.ADMIN_EMAIL;
 
-    // Create new user
-    const user = new User({
-      email,
-      passwordHash: password,
-      fullName,
-      role: 'admin', // Default to admin for now
-    });
+  // Create new user
+  const user = new User({
+    email,
+    passwordHash: password,
+    fullName,
+    role: isAdmin ? 'admin' : 'user', // ✅ Only the configured admin gets admin role
+  });
 
-    await user.save();
+  await user.save();
 
-    // Generate JWT token
-    const token = generateToken({
-      userId: (user._id as any).toString(),
-      email: user.email,
-      role: user.role,
-    });
+  // Generate JWT token
+  const token = generateToken({
+    userId: (user._id as any).toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: user.toJSON(),
-        token,
-      },
-    });
+  res.status(201).json({
+    success: true,
+    message: 'User registered successfully',
+    data: {
+      user: user.toJSON(),
+      token,
+    },
+  });
 });
 
+// 🧩 Login
 export const login = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       throw new CustomError('Validation failed', 400);
@@ -59,19 +62,19 @@ export const login = async (
 
     const { email, password } = req.body;
 
-    // Find user by email
+    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       throw new CustomError('Invalid credentials', 401);
     }
 
-    // Check password
+    // Verify password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       throw new CustomError('Invalid credentials', 401);
     }
 
-    // Generate JWT token
+    // Generate JWT
     const token = generateToken({
       userId: (user._id as any).toString(),
       email: user.email,
@@ -91,41 +94,34 @@ export const login = async (
   }
 };
 
+// 🧩 Get current user
 export const getMe = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new CustomError('User not authenticated', 401);
-    }
+    if (!req.user) throw new CustomError('User not authenticated', 401);
 
-    // Get full user data from database
     const user = await User.findById(req.user.id);
-    if (!user) {
-      throw new CustomError('User not found', 404);
-    }
+    if (!user) throw new CustomError('User not found', 404);
 
     res.status(200).json({
       success: true,
-      data: {
-        user: user.toJSON(),
-      },
+      data: { user: user.toJSON() },
     });
   } catch (error) {
     next(error);
   }
 };
 
+// 🧩 Logout
 export const logout = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Since we're using stateless JWT, logout is handled on the client side
-    // by removing the token. We just return a success message.
     res.status(200).json({
       success: true,
       message: 'Logout successful',
