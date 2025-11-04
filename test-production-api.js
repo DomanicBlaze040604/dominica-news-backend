@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// 🔧 UPDATE THIS URL TO YOUR ACTUAL RAILWAY PRODUCTION URL
+// ✅ YOUR ACTUAL RAILWAY PRODUCTION URL
 const PRODUCTION_URL = 'https://web-production-af44.up.railway.app/api';
 
 async function testProductionAPI() {
