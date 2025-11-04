@@ -32,7 +32,7 @@ const app: Application = express();
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // -----------------------------------------------------------------------------
-// 🌍 CORS Configuration
+// 🌍 CORS Configuration (Production Safe)
 // -----------------------------------------------------------------------------
 const allowedOrigins = [
   'http://localhost:3000',
@@ -40,6 +40,7 @@ const allowedOrigins = [
   'https://dominicanews.dm',
   'https://www.dominicanews.dm',
   'https://dominicanews.vercel.app',
+  'https://dominicanews.netlify.app',
 ];
 
 if (process.env.FRONTEND_URL) {
@@ -48,14 +49,15 @@ if (process.env.FRONTEND_URL) {
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // mobile / Postman etc.
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow Postman, server-side, etc.
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      console.warn(`❌ CORS blocked request from: ${origin}`);
+      console.warn(`🚫 CORS blocked request from: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   })
 );
 
@@ -69,7 +71,7 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Rate limit exceeded. Please slow down.' },
   skip: (req) => {
-    // Skip health checks and common reads (read-heavy public traffic)
+    // Skip common public routes
     return (
       req.path === '/api/health' ||
       req.path.startsWith('/api/settings') ||
@@ -86,7 +88,7 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
-app.use(responseTime()); // Track latency for monitoring
+app.use(responseTime());
 
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
@@ -114,6 +116,17 @@ app.use('/api/health', healthRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/test-db', testDbRoutes);
 app.use('/api/images', imageRoutes);
+
+// -----------------------------------------------------------------------------
+// 🧩 Temporary API Stubs (Prevents Frontend 404s)
+// -----------------------------------------------------------------------------
+app.get('/api/breaking-news', (_req: Request, res: Response) => {
+  res.json({ success: true, articles: [] });
+});
+
+app.get('/api/settings/featured_section', (_req: Request, res: Response) => {
+  res.json({ success: true, featured: [] });
+});
 
 // -----------------------------------------------------------------------------
 // 🏠 Root Route
