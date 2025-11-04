@@ -50,14 +50,20 @@ if (process.env.FRONTEND_URL) {
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow Postman, server-side, etc.
+      if (!origin) return callback(null, true); // allow Postman/server-side
       if (allowedOrigins.includes(origin)) return callback(null, true);
       console.warn(`🚫 CORS blocked request from: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
   })
 );
 
@@ -66,19 +72,15 @@ app.use(
 // -----------------------------------------------------------------------------
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  limit: 5000, // 5000 requests per minute per IP
+  limit: 5000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Rate limit exceeded. Please slow down.' },
-  skip: (req) => {
-    // Skip common public routes
-    return (
-      req.path === '/api/health' ||
-      req.path.startsWith('/api/settings') ||
-      req.path.startsWith('/api/articles') ||
-      req.path.startsWith('/api/categories')
-    );
-  },
+  skip: (req) =>
+    req.path === '/api/health' ||
+    req.path.startsWith('/api/settings') ||
+    req.path.startsWith('/api/articles') ||
+    req.path.startsWith('/api/categories'),
 });
 app.use(limiter);
 
@@ -116,6 +118,17 @@ app.use('/api/health', healthRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/test-db', testDbRoutes);
 app.use('/api/images', imageRoutes);
+
+// -----------------------------------------------------------------------------
+// 🧩 Admin Route Mirrors (Frontend Compatibility)
+// -----------------------------------------------------------------------------
+// These make sure /api/admin/* works exactly like /api/*
+app.use('/api/admin/articles', articleRoutes);
+app.use('/api/admin/authors', authorRoutes);
+app.use('/api/admin/categories', categoryRoutes);
+app.use('/api/admin/images', imageRoutes);
+app.use('/api/admin/settings', settingsRoutes);
+app.use('/api/admin/debug', debugRoutes);
 
 // -----------------------------------------------------------------------------
 // 🧩 Temporary API Stubs (Prevents Frontend 404s)

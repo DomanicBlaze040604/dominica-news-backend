@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-import cors from 'cors';
 import app from './app';
 import { config } from './config/config';
 import { connectDatabase } from './config/database';
@@ -24,25 +23,8 @@ const startServer = async (): Promise<void> => {
     await connectDatabase();
     console.log('✅ MongoDB connection established successfully.');
 
-    // ✅ Apply Safe Global CORS (Prevents conflicts with app.ts)
-    app.use(
-      cors({
-        origin: [
-          'https://dominicanews.dm',
-          'https://www.dominicanews.dm',
-          'https://dominicanews.vercel.app',
-          'https://dominica-news-frontend0000001.vercel.app',
-          'http://localhost:5173',
-          'http://localhost:3000',
-        ],
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-      })
-    );
-
-    // ✅ Health Check Route (important for Railway uptime)
-    app.get('/api/health', (req, res) => {
+    // ✅ Health Check Route (Vercel / Railway compatibility)
+    app.get('/api/health', (_req, res) => {
       res.status(200).json({
         status: 'ok',
         message: 'Dominica News API is live 🚀',
@@ -50,7 +32,7 @@ const startServer = async (): Promise<void> => {
       });
     });
 
-    // ✅ Seed the admin account
+    // ✅ Seed the admin account (idempotent)
     await seedAdmin();
 
     // ✅ Railway-compatible port binding
