@@ -31,7 +31,7 @@ const startServer = async (): Promise<void> => {
           'https://dominicanews.dm',
           'https://www.dominicanews.dm',
           'https://dominicanews.vercel.app',
-          'https://dominica-news-frontend000001.vercel.app',
+          'https://dominica-news-frontend0000001.vercel.app',
           'http://localhost:5173',
           'http://localhost:3000',
         ],
