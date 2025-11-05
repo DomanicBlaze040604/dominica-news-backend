@@ -584,3 +584,59 @@ export const submitContactForm = asyncHandler(async (req: Request, res: Response
     message: 'Thank you for your message! We will get back to you soon.'
   });
 });
+
+// Get featured section layout setting
+export const getFeaturedSectionLayout = asyncHandler(async (req: Request, res: Response) => {
+  const settings = await Settings.findOne();
+  
+  // Default to 'cards' layout if not set
+  const layout = (settings as any)?.featuredSectionLayout || 'cards';
+
+  res.json({
+    success: true,
+    data: {
+      _id: settings?._id || 'default',
+      key: 'featured_section_layout',
+      value: layout,
+      updatedAt: settings?.updatedAt || new Date().toISOString()
+    }
+  });
+});
+
+// Update featured section layout setting
+export const updateFeaturedSectionLayout = asyncHandler(async (req: Request, res: Response) => {
+  const { value } = req.body;
+  
+  // Validate layout value
+  const validLayouts = ['cards', 'single', 'mixed'];
+  if (!validLayouts.includes(value)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid layout value. Must be one of: cards, single, mixed'
+    });
+  }
+
+  let settings = await Settings.findOne();
+  
+  if (!settings) {
+    settings = await Settings.create({
+      siteName: 'Dominica News',
+      siteDescription: 'Your trusted source for news and information about Dominica',
+      featuredSectionLayout: value
+    });
+  } else {
+    (settings as any).featuredSectionLayout = value;
+    await settings.save();
+  }
+
+  res.json({
+    success: true,
+    message: 'Featured section layout updated successfully',
+    data: {
+      _id: settings._id,
+      key: 'featured_section_layout',
+      value,
+      updatedAt: settings.updatedAt.toISOString()
+    }
+  });
+});

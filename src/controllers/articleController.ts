@@ -466,3 +466,33 @@ export const getCategoryArticles = async (req: Request, res: Response) => {
     });
   }
 };
+// Get pinned articles
+export const getPinnedArticles = async (req: Request, res: Response) => {
+  try {
+    const { limit = 5 } = req.query;
+    const limitNum = parseInt(limit as string);
+
+    const articles = await Article.find({
+      status: 'published',
+      isPinned: true
+    })
+      .populate('author', 'name email avatar specialization')
+      .populate('category', 'name slug color description')
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(limitNum);
+
+    res.json({
+      success: true,
+      data: {
+        articles,
+        count: articles.length
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching pinned articles',
+      error: error.message
+    });
+  }
+};

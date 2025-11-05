@@ -7,7 +7,8 @@ import {
   deleteArticle,
   getBreakingNews,
   getFeaturedArticles,
-  getCategoryArticles
+  getCategoryArticles,
+  getPinnedArticles
 } from '../controllers/articleController';
 import { authenticate, requireAdmin, requireEditor, optionalAuth } from '../middleware/auth';
 import { validateArticle } from '../middleware/validation';
@@ -19,6 +20,7 @@ router.get('/', optionalAuth, getArticles);
 router.get('/latest', optionalAuth, getArticles); // Alias for homepage
 router.get('/breaking', getBreakingNews);
 router.get('/featured', getFeaturedArticles);
+router.get('/pinned', getPinnedArticles);
 router.get('/category/:categorySlug', optionalAuth, getCategoryArticles);
 // Dynamic slug route must be last to avoid conflicts
 router.get('/:slug', optionalAuth, getArticleBySlug);

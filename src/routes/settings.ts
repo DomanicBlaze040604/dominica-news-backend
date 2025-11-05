@@ -15,7 +15,9 @@ import {
   uploadLogoFile,
   uploadLogo,
   deleteLogo,
-  submitContactForm
+  submitContactForm,
+  getFeaturedSectionLayout,
+  updateFeaturedSectionLayout
 } from '../controllers/settingsController';
 import { authenticate, requireAdmin, requireEditor } from '../middleware/auth';
 import { validateSettings, validateIndividualSetting, validateContactForm } from '../middleware/validation';
@@ -28,6 +30,7 @@ router.get('/', getAllIndividualSettings); // Changed to support frontend format
 router.get('/original', getSettings); // Keep original format for backward compatibility
 router.get('/social-media', getSocialMedia);
 router.get('/contact', getContactInfo);
+router.get('/featured_section_layout', getFeaturedSectionLayout);
 router.get('/:key', getIndividualSetting);
 
 // Protected routes - Editors can view settings
@@ -40,6 +43,7 @@ router.put('/social-media', authenticate, requireAdmin, updateSocialMedia);
 router.put('/contact', authenticate, requireAdmin, updateContactInfo);
 router.put('/seo', authenticate, requireAdmin, updateSEOSettings);
 router.put('/maintenance', authenticate, requireAdmin, toggleMaintenanceMode);
+router.put('/featured_section_layout', authenticate, requireAdmin, updateFeaturedSectionLayout);
 
 // Logo management routes - Admin only
 router.post('/logo/upload', authenticate, requireAdmin, uploadLogo.single('logo'), uploadLogoFile);
