@@ -70,13 +70,16 @@ app.use(
 // ⚙️ Rate Limiting
 // -----------------------------------------------------------------------------
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  limit: 5000,
+  windowMs: 1 * 60 * 1000, // 1 minute
+  limit: 50000, // 50,000 requests per minute (very generous)
   message: { success: false, message: 'Rate limit exceeded. Please slow down.' },
   skip: (req) =>
     req.path.startsWith('/api/health') ||
     req.path.startsWith('/api/articles') ||
-    req.path.startsWith('/api/categories'),
+    req.path.startsWith('/api/categories') ||
+    req.path.startsWith('/api/static-pages') ||
+    req.path.startsWith('/api/authors') ||
+    req.path.startsWith('/api/images'),
 });
 app.use(limiter);
 
