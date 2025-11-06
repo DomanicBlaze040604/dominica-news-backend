@@ -18,6 +18,15 @@ const router = express.Router();
 router.get('/', getCategories);
 router.get('/check-slug/:slug', checkSlugAvailability);
 router.get('/:slug/preview', getCategoryPreview);
+router.get('/:slug/articles', async (req, res) => {
+  try {
+    // Import the function here to avoid circular dependency
+    const { getCategoryArticles } = await import('../controllers/articleController');
+    return getCategoryArticles(req, res);
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to get category articles' });
+  }
+});
 router.get('/:slug', getCategoryBySlug);
 
 // Protected routes - Editors can create and edit categories

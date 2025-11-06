@@ -188,6 +188,9 @@ console.log('Admin routes registered successfully');
 app.use('/api/auth', authRoutes);
 app.use('/api/articles', articleRoutes);
 
+// Frontend compatibility aliases
+app.use('/api/pages', staticPageRoutes); // Alias for static-pages
+
 // Health check and error reporting routes
 app.use('/api/health', healthRoutes);
 app.use('/api/errors', errorRoutes);

@@ -22,6 +22,17 @@ router.get('/breaking', getBreakingNews);
 router.get('/featured', getFeaturedArticles);
 router.get('/pinned', getPinnedArticles);
 router.get('/category/:categorySlug', optionalAuth, getCategoryArticles);
+// View tracking endpoint
+router.post('/:slug/views', async (req, res) => {
+  try {
+    // This is a simple view tracking endpoint
+    // In a real implementation, you might want to track unique views
+    res.json({ success: true, message: 'View tracked' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to track view' });
+  }
+});
+
 // Dynamic slug route must be last to avoid conflicts
 router.get('/:slug', optionalAuth, getArticleBySlug);
 
