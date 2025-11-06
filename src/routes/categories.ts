@@ -22,6 +22,8 @@ router.get('/:slug/articles', async (req, res) => {
   try {
     // Import the function here to avoid circular dependency
     const { getCategoryArticles } = await import('../controllers/articleController');
+    // Map the slug parameter to categorySlug for the function
+    req.params.categorySlug = req.params.slug;
     return getCategoryArticles(req, res);
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to get category articles' });
