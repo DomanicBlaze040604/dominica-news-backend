@@ -185,7 +185,7 @@ export const getCategoryArticlesBySlug = asyncHandler(async (req: Request, res: 
   const skip = (pageNum - 1) * limitNum;
 
   // Import Article model
-  const { Article } = require('../models/Article');
+  const Article = require('../models/Article').default;
 
   // Get articles for this category
   const [articles, totalArticles] = await Promise.all([
