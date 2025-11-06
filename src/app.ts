@@ -31,33 +31,55 @@ const app: Application = express();
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // -----------------------------------------------------------------------------
-// 🌍 CORS
+// 🌍 CORS Configuration for Dominica News
 // -----------------------------------------------------------------------------
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://dominicanews.dm',
-  'https://www.dominicanews.dm',
-  'https://dominicanews.vercel.app',
-  'https://dominica-news-frontend0000001.vercel.app',
-];
+const corsOptions = {
+  origin: [
+    // Development
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    // Production
+    'https://dominicanews.dm',
+    'https://www.dominicanews.dm',
+    // Vercel deployments
+    'https://dominicanews.vercel.app',
+    'https://dominica-news-frontend0000001.vercel.app',
+    'https://dominicanews-d2aa9.web.app',
+    // Firebase hosting
+    'https://dominicanews-d2aa9.firebaseapp.com',
+    // Add environment variable origins
+    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [])
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'X-Forwarded-For',
+    'X-Real-IP'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  maxAge: 86400 // 24 hours
+};
 
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(...process.env.FRONTEND_URL.split(','));
-}
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-      console.warn(`🚫 CORS Blocked Request from: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-  })
-);
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// Add CORS request logging for debugging
+app.use((req, res, next) => {
+  console.log(`CORS Request: ${req.method} ${req.url} from ${req.get('Origin') || 'no-origin'}`);
+  next();
+});
 
 // -----------------------------------------------------------------------------
 // ⚙️ Rate Limiting
@@ -81,6 +103,37 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 app.use(responseTime());
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
+
+// -----------------------------------------------------------------------------
+// 🔍 Admin Panel Debugging Middleware
+// -----------------------------------------------------------------------------
+app.use('/api/admin', (req, res, next) => {
+  console.log(`🔐 Admin Request: ${req.method} ${req.url}`);
+  console.log(`   Origin: ${req.get('Origin') || 'no-origin'}`);
+  console.log(`   Auth: ${req.get('Authorization') ? 'Present' : 'Missing'}`);
+  console.log(`   Content-Type: ${req.get('Content-Type') || 'not-set'}`);
+  next();
+});
+
+// Log successful responses for admin endpoints
+app.use('/api/admin', (req, res, next) => {
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log(`📤 Admin Response: ${req.method} ${req.url} - Status: ${res.statusCode}`);
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.success && parsed.data && Array.isArray(parsed.data)) {
+          console.log(`   Data Count: ${parsed.data.length} items`);
+        }
+      } catch (e) {
+        // Not JSON, ignore
+      }
+    }
+    return originalSend.call(this, data);
+  };
+  next();
+});
 
 // -----------------------------------------------------------------------------
 // 🖼️ Static Files
