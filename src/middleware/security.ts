@@ -28,10 +28,10 @@ export const rateLimiter = rateLimit({
   },
 });
 
-// Stricter rate limiting for authentication endpoints
+// More generous rate limiting for authentication endpoints
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // Increased from 5 to 50 attempts per window
+  max: 500, // 500 attempts per window (very generous)
   message: {
     error: 'Too many authentication attempts, please try again later.',
   },
@@ -40,10 +40,10 @@ export const authRateLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful requests
 });
 
-// Rate limiting for admin actions
+// More generous rate limiting for admin actions
 export const adminRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute for admin actions
+  max: 1000, // 1000 requests per minute for admin actions
   message: {
     error: 'Too many admin requests, please slow down.',
   },
