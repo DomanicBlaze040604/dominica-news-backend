@@ -162,6 +162,66 @@ export const updateCategory = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
+// Get articles for a category by slug
+export const getCategoryArticlesBySlug = asyncHandler(async (req: Request, res: Response) => {
+  const { slug } = req.params;
+  const {
+    page = 1,
+    limit = 12,
+    status = 'published'
+  } = req.query;
+
+  // Find the category by slug
+  const category = await Category.findOne({ slug });
+  if (!category) {
+    return res.status(404).json({
+      success: false,
+      message: 'Category not found'
+    });
+  }
+
+  const pageNum = parseInt(page as string);
+  const limitNum = parseInt(limit as string);
+  const skip = (pageNum - 1) * limitNum;
+
+  // Import Article model
+  const { Article } = require('../models/Article');
+
+  // Get articles for this category
+  const [articles, totalArticles] = await Promise.all([
+    Article.find({ 
+      category: category._id,
+      status: status
+    })
+      .populate('author', 'name email avatar specialization')
+      .populate('category', 'name slug color description')
+      .sort({ isPinned: -1, publishedAt: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Article.countDocuments({ 
+      category: category._id,
+      status: status
+    })
+  ]);
+
+  const totalPages = Math.ceil(totalArticles / limitNum);
+
+  res.json({
+    success: true,
+    data: {
+      category,
+      articles,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalArticles,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    }
+  });
+});
+
 // Delete category (admin only)
 export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

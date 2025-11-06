@@ -17,27 +17,14 @@ const router = express.Router();
 // Public routes
 router.get('/', getCategories);
 router.get('/check-slug/:slug', checkSlugAvailability);
+
+// Specific routes must come before generic /:slug route
 router.get('/:slug/preview', getCategoryPreview);
-router.get('/:slug/articles', async (req, res) => {
-  try {
-    // Import the function here to avoid circular dependency
-    const { getCategoryArticles } = await import('../controllers/articleController');
-    
-    // Create a new request object with the correct parameter name
-    const modifiedReq = {
-      ...req,
-      params: {
-        ...req.params,
-        categorySlug: req.params.slug
-      }
-    };
-    
-    return getCategoryArticles(modifiedReq as any, res);
-  } catch (error) {
-    console.error('Category articles error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get category articles' });
-  }
-});
+// Import the function directly
+import { getCategoryArticlesBySlug } from '../controllers/categoryController';
+router.get('/:slug/articles', getCategoryArticlesBySlug);
+
+// Generic slug route must be last
 router.get('/:slug', getCategoryBySlug);
 
 // Protected routes - Editors can create and edit categories
