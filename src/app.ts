@@ -205,6 +205,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/breaking-news', breakingNewsRoutes);
 app.use('/api/static-pages', staticPageRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/recycle-bin', recycleBinRoutes);
 
 // Sitemap routes (served at root level)
 app.use('/', sitemapRoutes);

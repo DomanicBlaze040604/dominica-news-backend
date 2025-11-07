@@ -3,9 +3,9 @@ const axios = require('axios');
 const BASE_URL = 'https://web-production-af44.up.railway.app/api';
 
 async function testNewFeatures() {
-    console.log('🧪 TESTING NEW ADMIN PANEL FEATURES\n');
+    console.log('🧪 TESTING NEW ADMIN FEATURES\n');
     
-    // Login to get admin token
+    // Login first
     console.log('1. Logging in as admin...');
     let adminToken;
     try {
@@ -21,69 +21,73 @@ async function testNewFeatures() {
         return;
     }
     
-    // Test concurrent login
-    console.log('2. Testing concurrent login (same user, different session)...');
-    try {
-        const login2Response = await axios.post(`${BASE_URL}/auth/login`, {
-            email: 'admin@dominicanews.com',
-            password: 'Pass@12345'
-        });
-        
-        const token2 = login2Response.data.data.token;
-        console.log('✅ Second login successful');
-        console.log(`   Token 1: ${adminToken.substring(0, 20)}...`);
-        console.log(`   Token 2: ${token2.substring(0, 20)}...`);
-        console.log(`   Tokens are different: ${adminToken !== token2 ? '✅' : '❌'}\n`);
-    } catch (error) {
-        console.log(`❌ Concurrent login failed: ${error.message}\n`);
-    }
+    const headers = {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+    };
     
-    // Test analytics dashboard
-    console.log('3. Testing analytics dashboard...');
+    // Test Analytics Dashboard
+    console.log('2. Testing Analytics Dashboard...');
     try {
-        const analyticsResponse = await axios.get(`${BASE_URL}/admin/analytics/dashboard?period=7d`, {
-            headers: { 'Authorization': `Bearer ${adminToken}` },
+        const response = await axios.get(`${BASE_URL}/analytics/dashboard?period=7d`, {
+            headers,
             validateStatus: () => true
         });
         
-        console.log(`   Status: ${analyticsResponse.status}`);
-        if (analyticsResponse.status === 200) {
-            const data = analyticsResponse.data.data;
-            console.log('✅ Analytics working');
-            console.log(`   Total Views: ${data.overview.totalViews}`);
-            console.log(`   Total Articles: ${data.content.totalArticles}`);
-            console.log(`   Published: ${data.content.publishedArticles}`);
-            console.log(`   Categories: ${data.content.totalCategories}`);
-            console.log(`   Authors: ${data.content.totalAuthors}\n`);
+        console.log(`   Status: ${response.status}`);
+        if (response.status === 200) {
+            console.log('   ✅ Analytics working');
+            console.log(`   Total Views: ${response.data.data.overview.totalViews}`);
+            console.log(`   Total Articles: ${response.data.data.content.totalArticles}`);
+            console.log(`   Published: ${response.data.data.content.publishedArticles}`);
         } else {
-            console.log(`❌ Analytics failed: ${analyticsResponse.status}\n`);
+            console.log(`   ❌ Failed: ${JSON.stringify(response.data).substring(0, 100)}`);
         }
     } catch (error) {
-        console.log(`❌ Analytics error: ${error.message}\n`);
+        console.log(`   ❌ Error: ${error.message}`);
     }
     
-    // Test recycle bin
-    console.log('4. Testing recycle bin...');
+    // Test Recycle Bin
+    console.log('\n3. Testing Recycle Bin...');
     try {
-        const recycleBinResponse = await axios.get(`${BASE_URL}/admin/recycle-bin`, {
-            headers: { 'Authorization': `Bearer ${adminToken}` },
+        const response = await axios.get(`${BASE_URL}/admin/recycle-bin`, {
+            headers,
             validateStatus: () => true
         });
         
-        console.log(`   Status: ${recycleBinResponse.status}`);
-        if (recycleBinResponse.status === 200) {
-            const items = recycleBinResponse.data.data.items;
-            console.log('✅ Recycle bin working');
-            console.log(`   Items in recycle bin: ${items.length}\n`);
+        console.log(`   Status: ${response.status}`);
+        if (response.status === 200) {
+            console.log('   ✅ Recycle bin working');
+            console.log(`   Items in recycle bin: ${response.data.data.items.length}`);
         } else {
-            console.log(`❌ Recycle bin failed: ${recycleBinResponse.status}\n`);
+            console.log(`   ❌ Failed: ${JSON.stringify(response.data).substring(0, 100)}`);
         }
     } catch (error) {
-        console.log(`❌ Recycle bin error: ${error.message}\n`);
+        console.log(`   ❌ Error: ${error.message}`);
     }
     
-    // Test category articles viewing
-    console.log('5. Testing category articles viewing...');
+    // Test Recycle Bin Stats
+    console.log('\n4. Testing Recycle Bin Stats...');
+    try {
+        const response = await axios.get(`${BASE_URL}/admin/recycle-bin/stats`, {
+            headers,
+            validateStatus: () => true
+        });
+        
+        console.log(`   Status: ${response.status}`);
+        if (response.status === 200) {
+            console.log('   ✅ Recycle bin stats working');
+            console.log(`   Total items: ${response.data.data.total}`);
+            console.log(`   Expiring soon: ${response.data.data.expiringSoon}`);
+        } else {
+            console.log(`   ❌ Failed`);
+        }
+    } catch (error) {
+        console.log(`   ❌ Error: ${error.message}`);
+    }
+    
+    // Test Category Articles Count
+    console.log('\n5. Testing Category Articles Count...');
     try {
         // Get first category
         const categoriesResponse = await axios.get(`${BASE_URL}/categories`);
@@ -91,66 +95,87 @@ async function testNewFeatures() {
             const categoryId = categoriesResponse.data.data[0].id;
             const categoryName = categoriesResponse.data.data[0].name;
             
-            console.log(`   Testing with category: "${categoryName}"`);
-            
-            // Get article count
-            const countResponse = await axios.get(`${BASE_URL}/categories/${categoryId}/articles-count`, {
-                headers: { 'Authorization': `Bearer ${adminToken}` },
+            const response = await axios.get(`${BASE_URL}/categories/admin/${categoryId}/articles-count`, {
+                headers,
                 validateStatus: () => true
             });
             
-            if (countResponse.status === 200) {
-                const counts = countResponse.data.data.articleCounts;
-                console.log('✅ Category article count working');
-                console.log(`   Total: ${counts.total}`);
-                console.log(`   Published: ${counts.published}`);
-                console.log(`   Draft: ${counts.draft}`);
-                console.log(`   Archived: ${counts.archived}`);
-            }
-            
-            // Get articles in category
-            const articlesResponse = await axios.get(`${BASE_URL}/categories/${categoryId}/articles-admin`, {
-                headers: { 'Authorization': `Bearer ${adminToken}` },
-                validateStatus: () => true
-            });
-            
-            if (articlesResponse.status === 200) {
-                const articles = articlesResponse.data.data.articles;
-                console.log(`✅ Category articles listing working`);
-                console.log(`   Articles found: ${articles.length}\n`);
+            console.log(`   Status: ${response.status}`);
+            if (response.status === 200) {
+                console.log(`   ✅ Category articles count working`);
+                console.log(`   Category: ${categoryName}`);
+                console.log(`   Total articles: ${response.data.data.articleCounts.total}`);
+                console.log(`   Published: ${response.data.data.articleCounts.published}`);
+            } else {
+                console.log(`   ❌ Failed`);
             }
         }
     } catch (error) {
-        console.log(`❌ Category articles error: ${error.message}\n`);
+        console.log(`   ❌ Error: ${error.message}`);
     }
     
-    // Test page view tracking
-    console.log('6. Testing page view tracking...');
+    // Test Category Articles Admin View
+    console.log('\n6. Testing Category Articles Admin View...');
     try {
-        const trackResponse = await axios.post(`${BASE_URL}/analytics/track/view`, {
-            source: 'direct',
-            device: 'desktop',
-            location: 'Dominica'
-        }, {
+        const categoriesResponse = await axios.get(`${BASE_URL}/categories`);
+        if (categoriesResponse.data.data.length > 0) {
+            const categoryId = categoriesResponse.data.data[0].id;
+            
+            const response = await axios.get(`${BASE_URL}/categories/admin/${categoryId}/articles`, {
+                headers,
+                validateStatus: () => true
+            });
+            
+            console.log(`   Status: ${response.status}`);
+            if (response.status === 200) {
+                console.log(`   ✅ Category articles admin view working`);
+                console.log(`   Articles in category: ${response.data.data.articles.length}`);
+            } else {
+                console.log(`   ❌ Failed`);
+            }
+        }
+    } catch (error) {
+        console.log(`   ❌ Error: ${error.message}`);
+    }
+    
+    // Test Concurrent Login
+    console.log('\n7. Testing Concurrent Login Support...');
+    try {
+        const login1 = await axios.post(`${BASE_URL}/auth/login`, {
+            email: 'admin@dominicanews.com',
+            password: 'Pass@12345'
+        });
+        
+        const login2 = await axios.post(`${BASE_URL}/auth/login`, {
+            email: 'admin@dominicanews.com',
+            password: 'Pass@12345'
+        });
+        
+        const token1 = login1.data.data.token;
+        const token2 = login2.data.data.token;
+        
+        // Test both tokens work
+        const test1 = await axios.get(`${BASE_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token1}` },
             validateStatus: () => true
         });
         
-        console.log(`   Status: ${trackResponse.status}`);
-        if (trackResponse.status === 200) {
-            console.log('✅ Page view tracking working\n');
+        const test2 = await axios.get(`${BASE_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token2}` },
+            validateStatus: () => true
+        });
+        
+        if (test1.status === 200 && test2.status === 200) {
+            console.log('   ✅ Concurrent login working');
+            console.log('   Both sessions active simultaneously');
         } else {
-            console.log(`❌ Tracking failed: ${trackResponse.status}\n`);
+            console.log('   ⚠️ One or both sessions failed');
         }
     } catch (error) {
-        console.log(`❌ Tracking error: ${error.message}\n`);
+        console.log(`   ❌ Error: ${error.message}`);
     }
     
-    console.log('📊 FEATURE TEST SUMMARY:');
-    console.log('✅ Concurrent logins - Supported');
-    console.log('✅ Analytics dashboard - Real-time data');
-    console.log('✅ Recycle bin - Functional');
-    console.log('✅ Category article viewing - Working');
-    console.log('✅ Page view tracking - Active');
+    console.log('\n✅ NEW FEATURES TEST COMPLETE');
 }
 
 testNewFeatures().catch(console.error);

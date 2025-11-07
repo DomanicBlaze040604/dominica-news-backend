@@ -22,9 +22,22 @@ router.get('/check-slug/:slug', checkSlugAvailability);
 
 // Specific routes must come before generic /:slug route
 router.get('/:slug/preview', getCategoryPreview);
-// Import the function directly
-import { getCategoryArticlesBySlug } from '../controllers/categoryController';
-router.get('/:slug/articles', getCategoryArticlesBySlug);
+router.get('/:slug/articles', async (req, res) => {
+  try {
+    const { getCategoryArticlesBySlug } = await import('../controllers/categoryController');
+    const modifiedReq = {
+      ...req,
+      params: {
+        ...req.params,
+        categorySlug: req.params.slug
+      }
+    };
+    return getCategoryArticlesBySlug(modifiedReq as any, res);
+  } catch (error) {
+    console.error('Category articles error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get category articles' });
+  }
+});
 
 // Generic slug route must be last
 router.get('/:slug', getCategoryBySlug);
@@ -33,9 +46,9 @@ router.get('/:slug', getCategoryBySlug);
 router.post('/', authenticate, requireEditor, validateCategory, handleValidationErrors, createCategory);
 router.put('/:id', authenticate, requireEditor, validateCategory, handleValidationErrors, updateCategory);
 
-// Admin routes for category article management
-router.get('/:id/articles-count', authenticate, requireEditor, getCategoryArticlesCount);
-router.get('/:id/articles-admin', authenticate, requireEditor, getCategoryArticlesAdmin);
+// Admin routes for category article management (use ID not slug)
+router.get('/admin/:id/articles-count', authenticate, requireEditor, getCategoryArticlesCount);
+router.get('/admin/:id/articles', authenticate, requireEditor, getCategoryArticlesAdmin);
 
 // Admin-only routes - Only admins can delete categories
 router.delete('/:id', authenticate, requireAdmin, deleteCategory);
