@@ -1,134 +1,84 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import compression from 'compression';
-import cookieParser from 'cookie-parser';
-import path from 'path';
-import { categoryRoutes } from './routes/categories';
-import { breakingNewsRoutes } from './routes/breaking-news';
-import { articleRoutes } from './routes/articles';
-import { staticPageRoutes } from './routes/staticPages';
-import { handleValidationErrors, notFoundHandler, globalErrorHandler } from './middleware/errorHandler';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import app from './app';
+
+// Load environment variables
+dotenv.config();
 
 // -----------------------------------------------------------------------------
-// ⚙️ Initialize Express
+// 🔧 Configuration
 // -----------------------------------------------------------------------------
-const app: Application = express();
+const PORT = parseInt(process.env.PORT || '5000', 10);
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dominica-news';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// ✅ FIX for Railway / Render / Vercel proxy environments
-app.set('trust proxy', 1);
-
-// -----------------------------------------------------------------------------
-// 🛡️ Security & Optimization Middlewares
-// -----------------------------------------------------------------------------
-app.use(helmet()); // Protects HTTP headers
-app.use(compression()); // Gzip compression
-app.use(cookieParser());
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+console.log('🎬 Starting Dominica News Backend...');
+console.log(`   Environment: ${NODE_ENV}`);
+console.log(`   Port: ${PORT}`);
+console.log(`   Node: ${process.version}`);
 
 // -----------------------------------------------------------------------------
-// 🌐 CORS Configuration
+// 🗄️ Database Connection
 // -----------------------------------------------------------------------------
-const allowedOrigins = [
-  'https://www.dominicanews.dm',
-  'https://dominicanews.dm',
-  'http://localhost:3000', // local dev
-];
+const connectDB = async (): Promise<void> => {
+  try {
+    console.log('🔌 Connecting to MongoDB...');
+    
+    const options: mongoose.ConnectOptions = {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 50,
+      minPoolSize: 10,
+    };
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
-);
+    await mongoose.connect(MONGODB_URI, options);
+    console.log('✅ MongoDB connected');
+
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error);
+    process.exit(1);
+  }
+};
 
 // -----------------------------------------------------------------------------
-// 📊 Logging Middleware
+// 🚀 Server Startup
 // -----------------------------------------------------------------------------
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
+const startServer = async (): Promise<void> => {
+  try {
+    await connectDB();
+
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🚀 ========================================');
+      console.log(`   Server running on port ${PORT}`);
+      console.log(`   Environment: ${NODE_ENV}`);
+      console.log(`   URL: http://localhost:${PORT}`);
+      console.log('   ========================================\n');
+    });
+
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      console.error('❌ Server error:', error);
+      process.exit(1);
+    });
+
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n⚠️  ${signal} received. Shutting down...`);
+      server.close(() => console.log('✅ Server closed'));
+      await mongoose.connection.close();
+      console.log('✅ MongoDB closed');
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+if (require.main === module) {
+  startServer();
 }
 
-// -----------------------------------------------------------------------------
-// 🚦 Rate Limiting (with fix for proxy header validation)
-// -----------------------------------------------------------------------------
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // limit each IP to 500 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: {
-    xForwardedForHeader: false, // ✅ prevents crash if trust proxy misbehaves
-  },
-  handler: (req, res) => {
-    res.status(429).json({
-      status: 'error',
-      message: 'Too many requests. Please try again later.',
-    });
-  },
-});
-
-app.use('/api', apiLimiter);
-
-// -----------------------------------------------------------------------------
-// 📁 Static File Serving (for uploads, public assets, etc.)
-// -----------------------------------------------------------------------------
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// -----------------------------------------------------------------------------
-// 🚀 API Routes
-// -----------------------------------------------------------------------------
-app.use('/api/categories', categoryRoutes);
-app.use('/api/breaking-news', breakingNewsRoutes);
-app.use('/api/articles', articleRoutes);
-app.use('/api/pages', staticPageRoutes);
-
-// -----------------------------------------------------------------------------
-// 🩺 Health Check Endpoint
-// -----------------------------------------------------------------------------
-app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date(),
-  });
-});
-
-// -----------------------------------------------------------------------------
-// ❌ 404 Not Found Handler
-// -----------------------------------------------------------------------------
-app.use(notFoundHandler);
-
-// -----------------------------------------------------------------------------
-// 🧱 Global Error Handler
-// -----------------------------------------------------------------------------
-app.use(globalErrorHandler);
-
-// -----------------------------------------------------------------------------
-// 🧭 Default Route
-// -----------------------------------------------------------------------------
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).send(`
-    <h2>Dominica News API</h2>
-    <p>Status: <strong>Running ✅</strong></p>
-    <p>Environment: ${process.env.NODE_ENV}</p>
-    <p>Version: 1.0.0</p>
-  `);
-});
-
-// -----------------------------------------------------------------------------
-// ✅ Export app for server.ts
-// -----------------------------------------------------------------------------
 export default app;
