@@ -8,7 +8,7 @@ dotenv.config();
 // -----------------------------------------------------------------------------
 // 🔧 Configuration
 // -----------------------------------------------------------------------------
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dominica-news';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -80,8 +80,8 @@ const startServer = async (): Promise<void> => {
     // Connect to database first
     await connectDB();
 
-    // Start the server
-    const server = app.listen(PORT, () => {
+    // Start the server - bind to 0.0.0.0 for Railway/production
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('\n🚀 ========================================');
       console.log(`   Dominica News API Server`);
       console.log('   ========================================');
