@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc -p tsconfig.build.json",
-    "start": "node start-production.js",
+    "start": "node dist/server.js",
     "start:dev": "node dist/server.js",
     "prestart": "",
     "test": "jest",
