@@ -24,6 +24,8 @@ import { healthRoutes } from './routes/health';
 import { errorRoutes } from './routes/errors';
 import { recycleBinRoutes } from './routes/recycleBin';
 import { analyticsRoutes } from './routes/analytics';
+import { tagRoutes } from './routes/tags';
+import { mediaRoutes } from './routes/media';
 import { errorHandler } from './middleware/errorHandler';
 import { checkMaintenanceMode } from './middleware/maintenance';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -193,6 +195,8 @@ app.use('/api/admin/breaking-news', breakingNewsRoutes);
 app.use('/api/admin/static-pages', staticPageRoutes);
 app.use('/api/admin/recycle-bin', recycleBinRoutes);
 app.use('/api/admin/analytics', analyticsRoutes);
+app.use('/api/admin/tags', tagRoutes);
+app.use('/api/admin/media', mediaRoutes);
 console.log('Admin routes registered successfully');
 
 // Regular API routes
@@ -201,6 +205,7 @@ app.use('/api/articles', articleRoutes);
 
 // Frontend compatibility aliases
 app.use('/api/pages', staticPageRoutes); // Alias for static-pages
+app.use('/api/admin/pages', staticPageRoutes); // Admin alias for pages
 
 // Health check and error reporting routes
 app.use('/api/health', healthRoutes);
@@ -213,6 +218,7 @@ app.use('/api/breaking-news', breakingNewsRoutes);
 app.use('/api/static-pages', staticPageRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recycle-bin', recycleBinRoutes);
+app.use('/api/tags', tagRoutes);
 
 // Sitemap routes (served at root level)
 app.use('/', sitemapRoutes);
