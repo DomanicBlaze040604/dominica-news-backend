@@ -91,12 +91,14 @@ app.use((req, res, next) => {
 });
 
 // -----------------------------------------------------------------------------
-// ⚙️ Rate Limiting
+// ⚙️ Rate Limiting - 50 Million Requests Per Minute
 // -----------------------------------------------------------------------------
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  limit: 50000, // 50,000 requests per minute (very generous)
+  limit: 50000000, // 50,000,000 requests per minute (extremely generous)
   message: { success: false, message: 'Rate limit exceeded. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
   skip: (req) =>
     req.path.startsWith('/api/health') ||
     req.path.startsWith('/api/articles') ||

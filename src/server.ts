@@ -1,70 +1,171 @@
-<mxfile host="app.diagrams.net" modified="2025-11-07T01:35:00.000Z" agent="ZebvoAI/1.0" version="24.7.1" editor="draw.io">
-  <diagram id="zebvo-ecosystem-v2" name="Zebvo Ecosystem v2">
-    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
-      <root>
-        <mxCell id="0"/><mxCell id="1" parent="0"/>
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import app from './app';
 
-        <!-- Swimlanes -->
-        <mxCell id="lane_tools" value="Tools" style="swimlane;fontStyle=1;align=left;verticalAlign=top;startSize=28;fillColor=#E9F5F0;strokeColor=#006B3F;rounded=1;" vertex="1" parent="1"><mxGeometry x="20" y="80" width="440" height="980" as="geometry"/></mxCell>
-        <mxCell id="lane_community" value="Community" style="swimlane;fontStyle=1;align=left;verticalAlign=top;startSize=28;fillColor=#FFF8E1;strokeColor=#FFCC00;rounded=1;" vertex="1" parent="1"><mxGeometry x="480" y="80" width="440" height="980" as="geometry"/></mxCell>
-        <mxCell id="lane_library" value="Library" style="swimlane;fontStyle=1;align=left;verticalAlign=top;startSize=28;fillColor=#FDECEC;strokeColor=#D21034;rounded=1;" vertex="1" parent="1"><mxGeometry x="940" y="80" width="440" height="980" as="geometry"/></mxCell>
-        <mxCell id="lane_core" value="Core / Shared" style="swimlane;fontStyle=1;align=left;verticalAlign=top;startSize=28;fillColor=#FFFFFF;strokeColor=#000000;rounded=1;" vertex="1" parent="1"><mxGeometry x="1400" y="80" width="480" height="980" as="geometry"/></mxCell>
+// Load environment variables
+dotenv.config();
 
-        <!-- Entry and router -->
-        <mxCell id="entry_www" value="www.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="60" y="20" width="220" height="40" as="geometry"/></mxCell>
-        <mxCell id="choice_dest" value="Select Destination" style="rhombus;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="340" y="20" width="180" height="60" as="geometry"/></mxCell>
+// -----------------------------------------------------------------------------
+// 🔧 Configuration
+// -----------------------------------------------------------------------------
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dominica-news';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-        <!-- Tools -->
-        <mxCell id="tools_modules" value="Module Subdomains" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#E9F5F0;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="20" width="360" height="60" as="geometry"/></mxCell>
-        <mxCell id="mod_chat" value="chat.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#BFE7D5;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="110" width="160" height="40" as="geometry"/></mxCell>
-        <mxCell id="mod_image" value="image.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#BFE7D5;" vertex="1" parent="lane_tools"><mxGeometry x="220" y="110" width="160" height="40" as="geometry"/></mxCell>
-        <mxCell id="mod_video" value="video.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#BFE7D5;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="170" width="160" height="40" as="geometry"/></mxCell>
-        <mxCell id="mod_audio" value="audio.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#BFE7D5;" vertex="1" parent="lane_tools"><mxGeometry x="220" y="170" width="160" height="40" as="geometry"/></mxCell>
-        <mxCell id="tools_prompt" value="User Inputs Prompt" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#E9F5F0;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="250" width="360" height="50" as="geometry"/></mxCell>
-        <mxCell id="tools_result" value="Result Generated" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#E9F5F0;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="320" width="360" height="50" as="geometry"/></mxCell>
-        <mxCell id="tools_publish" value="Save | Share | Publish" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#006B3F;fillColor=#E9F5F0;" vertex="1" parent="lane_tools"><mxGeometry x="20" y="390" width="360" height="50" as="geometry"/></mxCell>
+// -----------------------------------------------------------------------------
+// 🗄️ Database Connection with Enhanced Error Handling
+// -----------------------------------------------------------------------------
+const connectDB = async (): Promise<void> => {
+  try {
+    console.log('🔌 Attempting to connect to MongoDB...');
+    console.log(`   Environment: ${NODE_ENV}`);
+    console.log(`   Database: ${MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`);
 
-        <!-- Community -->
-        <mxCell id="community_home" value="community.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FFCC00;fillColor=#FFF8E1;" vertex="1" parent="lane_community"><mxGeometry x="20" y="20" width="360" height="60" as="geometry"/></mxCell>
-        <mxCell id="community_collab" value="Collaborate / Share / Comment" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FFCC00;fillColor=#FFF1B3;" vertex="1" parent="lane_community"><mxGeometry x="20" y="110" width="360" height="50" as="geometry"/></mxCell>
-        <mxCell id="community_groups" value="Groups / Discussions / Challenges" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FFCC00;fillColor=#FFF1B3;" vertex="1" parent="lane_community"><mxGeometry x="20" y="180" width="360" height="50" as="geometry"/></mxCell>
+    const options: mongoose.ConnectOptions = {
+      serverSelectionTimeoutMS: 10000, // 10 seconds
+      socketTimeoutMS: 45000, // 45 seconds
+      maxPoolSize: 50, // Increased for high rate limit
+      minPoolSize: 10,
+      retryWrites: true,
+      retryReads: true,
+    };
 
-        <!-- Library -->
-        <mxCell id="library_home" value="library.zebvo.ai" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#D21034;fillColor=#FDECEC;" vertex="1" parent="lane_library"><mxGeometry x="20" y="20" width="360" height="60" as="geometry"/></mxCell>
-        <mxCell id="library_browse" value="Browse Assets / Prompts / Datasets" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#D21034;fillColor=#F9C0C6;" vertex="1" parent="lane_library"><mxGeometry x="20" y="110" width="360" height="50" as="geometry"/></mxCell>
-        <mxCell id="library_import" value="Import Asset into Tools" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#D21034;fillColor=#F9C0C6;" vertex="1" parent="lane_library"><mxGeometry x="20" y="180" width="360" height="50" as="geometry"/></mxCell>
+    await mongoose.connect(MONGODB_URI, options);
 
-        <!-- Core/Shared -->
-        <mxCell id="core_sso" value="Unified SSO Login Service" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="20" y="20" width="400" height="60" as="geometry"/></mxCell>
-        <mxCell id="core_dashboard" value="User Dashboard" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="20" y="100" width="400" height="50" as="geometry"/></mxCell>
-        <mxCell id="core_billing" value="Billing & Usage" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="20" y="160" width="190" height="40" as="geometry"/></mxCell>
-        <mxCell id="core_bookmarks" value="Library Bookmarks / Downloads" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="230" y="160" width="190" height="40" as="geometry"/></mxCell>
-        <mxCell id="core_posts" value="Community Posts / Follows" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="20" y="210" width="190" height="40" as="geometry"/></mxCell>
-        <mxCell id="core_switch" value="Switch Between Modules" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="230" y="210" width="190" height="40" as="geometry"/></mxCell>
-        <mxCell id="core_gateway" value="API Gateway" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="20" y="280" width="190" height="40" as="geometry"/></mxCell>
-        <mxCell id="core_micro" value="AI Microservice Integration" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#FFFFFF;" vertex="1" parent="lane_core"><mxGeometry x="230" y="280" width="190" height="40" as="geometry"/></mxCell>
+    console.log('✅ MongoDB connected successfully');
+    console.log(`   Host: ${mongoose.connection.host}`);
+    console.log(`   Database: ${mongoose.connection.name}`);
+    console.log(`   Ready State: ${mongoose.connection.readyState}`);
 
-        <!-- Edges -->
-        <mxCell id="e_www_to_choice" edge="1" parent="1" source="entry_www" target="choice_dest" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_choice_to_tools" edge="1" parent="1" source="choice_dest" target="tools_modules" style="endArrow=block;strokeColor=#006B3F;"/>
-        <mxCell id="e_choice_to_community" edge="1" parent="1" source="choice_dest" target="community_home" style="endArrow=block;strokeColor=#FFCC00;"/>
-        <mxCell id="e_choice_to_library" edge="1" parent="1" source="choice_dest" target="library_home" style="endArrow=block;strokeColor=#D21034;"/>
-        <mxCell id="e_tools_to_sso" edge="1" parent="1" source="tools_modules" target="core_sso" style="endArrow=block;strokeColor=#000000;dashed=1;"/>
-        <mxCell id="e_comm_to_sso" edge="1" parent="1" source="community_home" target="core_sso" style="endArrow=block;strokeColor=#000000;dashed=1;"/>
-        <mxCell id="e_lib_to_sso" edge="1" parent="1" source="library_home" target="core_sso" style="endArrow=block;strokeColor=#000000;dashed=1;"/>
-        <mxCell id="e_sso_to_dash" edge="1" parent="1" source="core_sso" target="core_dashboard" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_dash_to_billing" edge="1" parent="1" source="core_dashboard" target="core_billing" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_dash_to_bookmarks" edge="1" parent="1" source="core_dashboard" target="core_bookmarks" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_dash_to_posts" edge="1" parent="1" source="core_dashboard" target="core_posts" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_dash_to_switch" edge="1" parent="1" source="core_dashboard" target="core_switch" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_prompt_to_gateway" edge="1" parent="1" source="tools_prompt" target="core_gateway" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_gateway_to_micro" edge="1" parent="1" source="core_gateway" target="core_micro" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_micro_to_result" edge="1" parent="1" source="core_micro" target="tools_result" style="endArrow=block;strokeColor=#000000;"/>
-        <mxCell id="e_result_to_publish" edge="1" parent="1" source="tools_result" target="tools_publish" style="endArrow=block;strokeColor=#006B3F;"/>
-        <mxCell id="e_publish_to_comm" edge="1" parent="1" source="tools_publish" target="community_home" style="endArrow=block;strokeColor=#FFCC00;"/>
-        <mxCell id="e_publish_to_lib" edge="1" parent="1" source="tools_publish" target="library_home" style="endArrow=block;strokeColor=#D21034;"/>
-        <mxCell id="e_import_to_tools" edge="1" parent="1" source="library_import" target="tools_modules" style="endArrow=block;strokeColor=#D21034;dashed=1;"/>
-      </root>
-    </mxGraphModel>
-  </diagram>
-</mxfile>
+    // Monitor connection events
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      console.log('✅ MongoDB reconnected successfully');
+    });
+
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error);
+    
+    if (error instanceof Error) {
+      console.error('   Error Name:', error.name);
+      console.error('   Error Message:', error.message);
+      
+      // Provide helpful error messages
+      if (error.message.includes('ECONNREFUSED')) {
+        console.error('   💡 Tip: Make sure MongoDB is running');
+      } else if (error.message.includes('authentication failed')) {
+        console.error('   💡 Tip: Check your MongoDB credentials');
+      } else if (error.message.includes('network')) {
+        console.error('   💡 Tip: Check your network connection and firewall settings');
+      }
+    }
+
+    // Exit process with failure
+    process.exit(1);
+  }
+};
+
+// -----------------------------------------------------------------------------
+// 🚀 Server Startup with Enhanced Error Handling
+// -----------------------------------------------------------------------------
+const startServer = async (): Promise<void> => {
+  try {
+    // Connect to database first
+    await connectDB();
+
+    // Start the server
+    const server = app.listen(PORT, () => {
+      console.log('\n🚀 ========================================');
+      console.log(`   Dominica News API Server`);
+      console.log('   ========================================');
+      console.log(`   🌍 Environment: ${NODE_ENV}`);
+      console.log(`   🔗 Server URL: http://localhost:${PORT}`);
+      console.log(`   📊 API Docs: http://localhost:${PORT}/api`);
+      console.log(`   ⚡ Rate Limit: 50,000,000 requests/minute`);
+      console.log(`   🗄️  Database: Connected`);
+      console.log(`   ✅ Status: Running`);
+      console.log('   ========================================\n');
+    });
+
+    // Handle server errors
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      console.error('❌ Server error:', error);
+
+      if (error.code === 'EADDRINUSE') {
+        console.error(`   💡 Port ${PORT} is already in use`);
+        console.error(`   💡 Try: kill -9 $(lsof -ti:${PORT}) or use a different port`);
+      } else if (error.code === 'EACCES') {
+        console.error(`   💡 Permission denied for port ${PORT}`);
+        console.error(`   💡 Try using a port number above 1024`);
+      }
+
+      process.exit(1);
+    });
+
+    // Graceful shutdown handlers
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n⚠️  ${signal} received. Starting graceful shutdown...`);
+
+      try {
+        // Close server
+        server.close(() => {
+          console.log('✅ HTTP server closed');
+        });
+
+        // Close database connection
+        await mongoose.connection.close();
+        console.log('✅ MongoDB connection closed');
+
+        console.log('✅ Graceful shutdown completed');
+        process.exit(0);
+      } catch (error) {
+        console.error('❌ Error during shutdown:', error);
+        process.exit(1);
+      }
+    };
+
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error: Error) => {
+      console.error('❌ UNCAUGHT EXCEPTION! Shutting down...');
+      console.error('   Error:', error.name, error.message);
+      console.error('   Stack:', error.stack);
+      process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+      console.error('❌ UNHANDLED REJECTION! Shutting down...');
+      console.error('   Reason:', reason);
+      console.error('   Promise:', promise);
+      process.exit(1);
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// -----------------------------------------------------------------------------
+// 🎬 Start the Application
+// -----------------------------------------------------------------------------
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('❌ Fatal error during startup:', error);
+    process.exit(1);
+  });
+}
+
+// Export for testing
+export default app;
