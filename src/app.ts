@@ -22,6 +22,8 @@ import { userRoutes } from './routes/users';
 import sitemapRoutes from './routes/sitemap';
 import { healthRoutes } from './routes/health';
 import { errorRoutes } from './routes/errors';
+import { recycleBinRoutes } from './routes/recycleBin';
+import { analyticsRoutes } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { checkMaintenanceMode } from './middleware/maintenance';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -182,6 +184,8 @@ app.use('/api/admin/settings', settingsRoutes);
 app.use('/api/admin/images', imageRoutes);
 app.use('/api/admin/breaking-news', breakingNewsRoutes);
 app.use('/api/admin/static-pages', staticPageRoutes);
+app.use('/api/admin/recycle-bin', recycleBinRoutes);
+app.use('/api/admin/analytics', analyticsRoutes);
 console.log('Admin routes registered successfully');
 
 // Regular API routes
@@ -200,6 +204,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/breaking-news', breakingNewsRoutes);
 app.use('/api/static-pages', staticPageRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Sitemap routes (served at root level)
 app.use('/', sitemapRoutes);

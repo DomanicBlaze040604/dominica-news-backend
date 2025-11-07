@@ -6,7 +6,9 @@ import {
   getCategoryPreview,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getCategoryArticlesCount,
+  getCategoryArticlesAdmin
 } from '../controllers/categoryController';
 import { authenticate, requireAdmin, requireEditor } from '../middleware/auth';
 import { validateCategory } from '../middleware/validation';
@@ -30,6 +32,10 @@ router.get('/:slug', getCategoryBySlug);
 // Protected routes - Editors can create and edit categories
 router.post('/', authenticate, requireEditor, validateCategory, handleValidationErrors, createCategory);
 router.put('/:id', authenticate, requireEditor, validateCategory, handleValidationErrors, updateCategory);
+
+// Admin routes for category article management
+router.get('/:id/articles-count', authenticate, requireEditor, getCategoryArticlesCount);
+router.get('/:id/articles-admin', authenticate, requireEditor, getCategoryArticlesAdmin);
 
 // Admin-only routes - Only admins can delete categories
 router.delete('/:id', authenticate, requireAdmin, deleteCategory);

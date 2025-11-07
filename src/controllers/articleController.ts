@@ -4,6 +4,8 @@ import Author from '../models/Author';
 import { Category } from '../models/Category';
 import { slugify } from '../utils/slugify';
 import { getDominicanTime, toDominicanTime } from '../utils/timezone';
+import { moveToRecycleBin } from './recycleBinController';
+import mongoose from 'mongoose';
 
 // Create article with rich text content
 export const createArticle = async (req: Request, res: Response) => {
@@ -320,7 +322,7 @@ export const updateArticle = async (req: Request, res: Response) => {
   }
 };
 
-// Delete article
+// Delete article (move to recycle bin)
 export const deleteArticle = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -333,6 +335,29 @@ export const deleteArticle = async (req: Request, res: Response) => {
       });
     }
 
+    // Get user ID from request
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    // Move to recycle bin instead of permanent deletion
+    await moveToRecycleBin(
+      'article',
+      id,
+      article.toObject(),
+      new mongoose.Types.ObjectId(userId),
+      {
+        title: article.title,
+        slug: article.slug,
+        status: article.status
+      }
+    );
+
+    // Delete from main collection
     await Article.findByIdAndDelete(id);
 
     // Update author's article count
@@ -340,7 +365,7 @@ export const deleteArticle = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Article deleted successfully'
+      message: 'Article moved to recycle bin'
     });
   } catch (error: any) {
     res.status(500).json({
