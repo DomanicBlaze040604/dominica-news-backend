@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import logger from '../services/logger';
 import errorTracker from '../services/errorTracker';
 
+// -----------------------------------------------------------------------------
+// 🧩 Custom Error Class
+// -----------------------------------------------------------------------------
 export class CustomError extends Error {
   statusCode: number;
   status: string;
@@ -17,10 +20,17 @@ export class CustomError extends Error {
   }
 }
 
-export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
+// -----------------------------------------------------------------------------
+// 🧩 Async Handler Wrapper (for async route controllers)
+// -----------------------------------------------------------------------------
+export const asyncHandler =
+  (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
+// -----------------------------------------------------------------------------
+// 🧩 Centralized Error Handler
+// -----------------------------------------------------------------------------
 export const errorHandler = (
   err: CustomError,
   req: Request,
@@ -30,112 +40,128 @@ export const errorHandler = (
   let error = { ...err };
   error.message = err.message;
 
-  // Determine status code
   let statusCode = error.statusCode || 500;
 
-  // Mongoose bad ObjectId
+  // 🔹 Handle known Mongoose & JWT errors gracefully
   if (err.name === 'CastError') {
-    const message = 'Resource not found';
-    error = { ...error, message, statusCode: 404 };
+    error = { ...error, message: 'Resource not found', statusCode: 404 };
     statusCode = 404;
   }
 
-  // Mongoose duplicate key
   if (err.name === 'MongoError' && (err as any).code === 11000) {
-    const message = 'Duplicate field value entered';
-    error = { ...error, message, statusCode: 400 };
+    error = { ...error, message: 'Duplicate field value entered', statusCode: 400 };
     statusCode = 400;
   }
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values((err as any).errors).map((val: any) => val.message).join(', ');
+    const message = Object.values((err as any).errors)
+      .map((val: any) => val.message)
+      .join(', ');
     error = { ...error, message, statusCode: 400 };
     statusCode = 400;
   }
 
-  // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token';
-    error = { ...error, message, statusCode: 401 };
+    error = { ...error, message: 'Invalid token', statusCode: 401 };
     statusCode = 401;
   }
 
   if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired';
-    error = { ...error, message, statusCode: 401 };
+    error = { ...error, message: 'Token expired', statusCode: 401 };
     statusCode = 401;
   }
 
-  // Track the error
+  // 🔹 Track & log error with context
   const errorId = errorTracker.trackError(err, req, { statusCode });
-
-  // Log the error with context
-  const context = logger.createRequestContext(req, { 
+  const context = logger.createRequestContext(req, {
     statusCode,
     errorId,
-    userAction: 'error_occurred'
+    userAction: 'error_occurred',
   });
 
-  logger.error(
-    `${err.name}: ${error.message}`,
-    err,
-    context,
-    { 
-      errorId,
-      isOperational: error.isOperational,
-      originalError: err.name
-    }
-  );
+  logger.error(`${err.name}: ${error.message}`, err, context, {
+    errorId,
+    isOperational: error.isOperational,
+    originalError: err.name,
+  });
 
-  // Prepare user-friendly error message
+  // 🔹 User-friendly message
   let userMessage = error.message || 'Server Error';
-  
-  // Don't expose internal errors in production
   if (process.env.NODE_ENV === 'production' && statusCode >= 500) {
     userMessage = 'Internal Server Error';
   }
 
-  // Send error response
   const errorResponse: any = {
     success: false,
     error: userMessage,
-    errorId: errorId
+    errorId,
   };
 
-  // Include stack trace in development
   if (process.env.NODE_ENV === 'development') {
     errorResponse.stack = err.stack;
     errorResponse.details = {
       name: err.name,
-      originalMessage: err.message
+      originalMessage: err.message,
     };
   }
 
   res.status(statusCode).json(errorResponse);
 };
 
-export const handleValidationErrors = (req: Request, res: Response, next: NextFunction): Response | void => {
+// -----------------------------------------------------------------------------
+// 🧩 Validation Error Handler (express-validator)
+// -----------------------------------------------------------------------------
+export const handleValidationErrors = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Response | void => {
   const { validationResult } = require('express-validator');
   const errors = validationResult(req);
-  
+
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
-  
+
   next();
 };
 
+// -----------------------------------------------------------------------------
+// 🧩 Audit Logger Middleware
+// -----------------------------------------------------------------------------
 export const auditLogger = (action: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const context = logger.createRequestContext(req, { userAction: action });
     logger.logUserAction(action, req, {
       timestamp: new Date().toISOString(),
-      success: true
+      success: true,
     });
     next();
   };
+};
+
+// -----------------------------------------------------------------------------
+// 🧩 404 Not Found Handler
+// -----------------------------------------------------------------------------
+export const notFoundHandler = (req: Request, res: Response): void => {
+  res.status(404).json({
+    success: false,
+    error: `Not Found - ${req.originalUrl}`,
+  });
+};
+
+// -----------------------------------------------------------------------------
+// 🧩 Global Error Handler Wrapper
+// -----------------------------------------------------------------------------
+export const globalErrorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Simply delegate to your centralized handler above
+  return errorHandler(err, req, res, next);
 };

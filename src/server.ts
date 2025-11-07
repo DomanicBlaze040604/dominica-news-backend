@@ -1,171 +1,134 @@
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import app from './app';
-
-// Load environment variables
-dotenv.config();
+import express, { Application, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import { categoryRoutes } from './routes/categories';
+import { breakingNewsRoutes } from './routes/breaking-news';
+import { articleRoutes } from './routes/articles';
+import { staticPageRoutes } from './routes/staticPages';
+import { handleValidationErrors, notFoundHandler, globalErrorHandler } from './middleware/errorHandler';
 
 // -----------------------------------------------------------------------------
-// 🔧 Configuration
+// ⚙️ Initialize Express
 // -----------------------------------------------------------------------------
-const PORT = parseInt(process.env.PORT || '5000', 10);
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dominica-news';
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const app: Application = express();
+
+// ✅ FIX for Railway / Render / Vercel proxy environments
+app.set('trust proxy', 1);
 
 // -----------------------------------------------------------------------------
-// 🗄️ Database Connection with Enhanced Error Handling
+// 🛡️ Security & Optimization Middlewares
 // -----------------------------------------------------------------------------
-const connectDB = async (): Promise<void> => {
-  try {
-    console.log('🔌 Attempting to connect to MongoDB...');
-    console.log(`   Environment: ${NODE_ENV}`);
-    console.log(`   Database: ${MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')}`);
+app.use(helmet()); // Protects HTTP headers
+app.use(compression()); // Gzip compression
+app.use(cookieParser());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-    const options: mongoose.ConnectOptions = {
-      serverSelectionTimeoutMS: 10000, // 10 seconds
-      socketTimeoutMS: 45000, // 45 seconds
-      maxPoolSize: 50, // Increased for high rate limit
-      minPoolSize: 10,
-      retryWrites: true,
-      retryReads: true,
-    };
+// -----------------------------------------------------------------------------
+// 🌐 CORS Configuration
+// -----------------------------------------------------------------------------
+const allowedOrigins = [
+  'https://www.dominicanews.dm',
+  'https://dominicanews.dm',
+  'http://localhost:3000', // local dev
+];
 
-    await mongoose.connect(MONGODB_URI, options);
-
-    console.log('✅ MongoDB connected successfully');
-    console.log(`   Host: ${mongoose.connection.host}`);
-    console.log(`   Database: ${mongoose.connection.name}`);
-    console.log(`   Ready State: ${mongoose.connection.readyState}`);
-
-    // Monitor connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB connection error:', err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
-    });
-
-    mongoose.connection.on('reconnected', () => {
-      console.log('✅ MongoDB reconnected successfully');
-    });
-
-  } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
-    
-    if (error instanceof Error) {
-      console.error('   Error Name:', error.name);
-      console.error('   Error Message:', error.message);
-      
-      // Provide helpful error messages
-      if (error.message.includes('ECONNREFUSED')) {
-        console.error('   💡 Tip: Make sure MongoDB is running');
-      } else if (error.message.includes('authentication failed')) {
-        console.error('   💡 Tip: Check your MongoDB credentials');
-      } else if (error.message.includes('network')) {
-        console.error('   💡 Tip: Check your network connection and firewall settings');
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
       }
-    }
-
-    // Exit process with failure
-    process.exit(1);
-  }
-};
-
-// -----------------------------------------------------------------------------
-// 🚀 Server Startup with Enhanced Error Handling
-// -----------------------------------------------------------------------------
-const startServer = async (): Promise<void> => {
-  try {
-    // Connect to database first
-    await connectDB();
-
-    // Start the server - bind to 0.0.0.0 for Railway/production
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log('\n🚀 ========================================');
-      console.log(`   Dominica News API Server`);
-      console.log('   ========================================');
-      console.log(`   🌍 Environment: ${NODE_ENV}`);
-      console.log(`   🔗 Server URL: http://localhost:${PORT}`);
-      console.log(`   📊 API Docs: http://localhost:${PORT}/api`);
-      console.log(`   ⚡ Rate Limit: 50,000,000 requests/minute`);
-      console.log(`   🗄️  Database: Connected`);
-      console.log(`   ✅ Status: Running`);
-      console.log('   ========================================\n');
-    });
-
-    // Handle server errors
-    server.on('error', (error: NodeJS.ErrnoException) => {
-      console.error('❌ Server error:', error);
-
-      if (error.code === 'EADDRINUSE') {
-        console.error(`   💡 Port ${PORT} is already in use`);
-        console.error(`   💡 Try: kill -9 $(lsof -ti:${PORT}) or use a different port`);
-      } else if (error.code === 'EACCES') {
-        console.error(`   💡 Permission denied for port ${PORT}`);
-        console.error(`   💡 Try using a port number above 1024`);
-      }
-
-      process.exit(1);
-    });
-
-    // Graceful shutdown handlers
-    const gracefulShutdown = async (signal: string) => {
-      console.log(`\n⚠️  ${signal} received. Starting graceful shutdown...`);
-
-      try {
-        // Close server
-        server.close(() => {
-          console.log('✅ HTTP server closed');
-        });
-
-        // Close database connection
-        await mongoose.connection.close();
-        console.log('✅ MongoDB connection closed');
-
-        console.log('✅ Graceful shutdown completed');
-        process.exit(0);
-      } catch (error) {
-        console.error('❌ Error during shutdown:', error);
-        process.exit(1);
-      }
-    };
-
-    // Listen for termination signals
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (error: Error) => {
-      console.error('❌ UNCAUGHT EXCEPTION! Shutting down...');
-      console.error('   Error:', error.name, error.message);
-      console.error('   Stack:', error.stack);
-      process.exit(1);
-    });
-
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-      console.error('❌ UNHANDLED REJECTION! Shutting down...');
-      console.error('   Reason:', reason);
-      console.error('   Promise:', promise);
-      process.exit(1);
-    });
-
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-};
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+  })
+);
 
 // -----------------------------------------------------------------------------
-// 🎬 Start the Application
+// 📊 Logging Middleware
 // -----------------------------------------------------------------------------
-if (require.main === module) {
-  startServer().catch((error) => {
-    console.error('❌ Fatal error during startup:', error);
-    process.exit(1);
-  });
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
 }
 
-// Export for testing
+// -----------------------------------------------------------------------------
+// 🚦 Rate Limiting (with fix for proxy header validation)
+// -----------------------------------------------------------------------------
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: {
+    xForwardedForHeader: false, // ✅ prevents crash if trust proxy misbehaves
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 'error',
+      message: 'Too many requests. Please try again later.',
+    });
+  },
+});
+
+app.use('/api', apiLimiter);
+
+// -----------------------------------------------------------------------------
+// 📁 Static File Serving (for uploads, public assets, etc.)
+// -----------------------------------------------------------------------------
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// -----------------------------------------------------------------------------
+// 🚀 API Routes
+// -----------------------------------------------------------------------------
+app.use('/api/categories', categoryRoutes);
+app.use('/api/breaking-news', breakingNewsRoutes);
+app.use('/api/articles', articleRoutes);
+app.use('/api/pages', staticPageRoutes);
+
+// -----------------------------------------------------------------------------
+// 🩺 Health Check Endpoint
+// -----------------------------------------------------------------------------
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date(),
+  });
+});
+
+// -----------------------------------------------------------------------------
+// ❌ 404 Not Found Handler
+// -----------------------------------------------------------------------------
+app.use(notFoundHandler);
+
+// -----------------------------------------------------------------------------
+// 🧱 Global Error Handler
+// -----------------------------------------------------------------------------
+app.use(globalErrorHandler);
+
+// -----------------------------------------------------------------------------
+// 🧭 Default Route
+// -----------------------------------------------------------------------------
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).send(`
+    <h2>Dominica News API</h2>
+    <p>Status: <strong>Running ✅</strong></p>
+    <p>Environment: ${process.env.NODE_ENV}</p>
+    <p>Version: 1.0.0</p>
+  `);
+});
+
+// -----------------------------------------------------------------------------
+// ✅ Export app for server.ts
+// -----------------------------------------------------------------------------
 export default app;
