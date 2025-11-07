@@ -162,6 +162,42 @@ export const updateCategory = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
+// Get articles count for a category
+export const getCategoryArticlesCount = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const category = await Category.findById(id);
+  if (!category) {
+    return res.status(404).json({
+      success: false,
+      message: 'Category not found'
+    });
+  }
+
+  // Import Article model
+  const Article = require('../models/Article').default;
+
+  const [total, published, draft, archived] = await Promise.all([
+    Article.countDocuments({ category: id }),
+    Article.countDocuments({ category: id, status: 'published' }),
+    Article.countDocuments({ category: id, status: 'draft' }),
+    Article.countDocuments({ category: id, status: 'archived' })
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      category,
+      articleCounts: {
+        total,
+        published,
+        draft,
+        archived
+      }
+    }
+  });
+});
+
 // Get articles for a category by slug
 export const getCategoryArticlesBySlug = asyncHandler(async (req: Request, res: Response) => {
   const { slug } = req.params;
@@ -215,6 +251,59 @@ export const getCategoryArticlesBySlug = asyncHandler(async (req: Request, res: 
         currentPage: pageNum,
         totalPages,
         totalArticles,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    }
+  });
+});
+
+// Get all articles in a category (for admin panel)
+export const getCategoryArticlesAdmin = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, page = 1, limit = 20 } = req.query;
+
+  const category = await Category.findById(id);
+  if (!category) {
+    return res.status(404).json({
+      success: false,
+      message: 'Category not found'
+    });
+  }
+
+  const pageNum = parseInt(page as string);
+  const limitNum = parseInt(limit as string);
+  const skip = (pageNum - 1) * limitNum;
+
+  // Import Article model
+  const Article = require('../models/Article').default;
+
+  const query: any = { category: id };
+  if (status) {
+    query.status = status;
+  }
+
+  const [articles, total] = await Promise.all([
+    Article.find(query)
+      .populate('author', 'name email avatar')
+      .populate('category', 'name slug')
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Article.countDocuments(query)
+  ]);
+
+  const totalPages = Math.ceil(total / limitNum);
+
+  res.json({
+    success: true,
+    data: {
+      category,
+      articles,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalArticles: total,
         hasNextPage: pageNum < totalPages,
         hasPrevPage: pageNum > 1
       }
