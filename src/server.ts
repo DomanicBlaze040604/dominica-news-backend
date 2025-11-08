@@ -24,6 +24,9 @@ const connectDB = async (): Promise<void> => {
   try {
     console.log('🔌 Connecting to MongoDB...');
     
+    // Suppress mongoose warnings
+    mongoose.set('strictQuery', false);
+    
     const options: mongoose.ConnectOptions = {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
@@ -32,11 +35,26 @@ const connectDB = async (): Promise<void> => {
     };
 
     await mongoose.connect(MONGODB_URI, options);
-    console.log('✅ MongoDB connected');
+    console.log('✅ MongoDB connected successfully');
+    
+    // Handle MongoDB connection errors after initial connection
+    mongoose.connection.on('error', (err) => {
+      console.error('MongoDB connection error:', err);
+      // Don't exit - just log the error
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('✅ MongoDB reconnected');
+    });
 
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
-    process.exit(1);
+    console.log('⚠️  Server will continue without database connection');
+    // Don't exit - let the server run even if MongoDB fails
   }
 };
 
@@ -61,15 +79,39 @@ const startServer = async (): Promise<void> => {
     });
 
     const gracefulShutdown = async (signal: string) => {
-      console.log(`\n⚠️  ${signal} received. Shutting down...`);
-      server.close(() => console.log('✅ Server closed'));
-      await mongoose.connection.close();
-      console.log('✅ MongoDB closed');
-      process.exit(0);
+      console.log(`\n⚠️  ${signal} received. Starting graceful shutdown...`);
+      
+      // Give ongoing requests time to complete
+      setTimeout(() => {
+        server.close(async () => {
+          console.log('✅ Server closed');
+          try {
+            await mongoose.connection.close();
+            console.log('✅ MongoDB closed');
+            process.exit(0);
+          } catch (error) {
+            console.error('Error closing MongoDB:', error);
+            process.exit(1);
+          }
+        });
+      }, 1000); // Wait 1 second before closing
     };
 
+    // Handle shutdown signals
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      console.error('❌ Uncaught Exception:', error);
+      // Don't exit - log and continue
+    });
+    
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+      // Don't exit - log and continue
+    });
 
   } catch (error) {
     console.error('❌ Failed to start server:', error);
