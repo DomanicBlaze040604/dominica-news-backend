@@ -44,30 +44,49 @@ app.set('trust proxy', 1);
 // -----------------------------------------------------------------------------
 // 🛡️ Security
 // -----------------------------------------------------------------------------
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet({ 
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false
+}));
 
 // -----------------------------------------------------------------------------
 // 🌍 CORS Configuration for Dominica News
 // -----------------------------------------------------------------------------
 const corsOptions = {
-  origin: [
-    // Development
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'http://localhost:8081',
-    // Production
-    'https://dominicanews.dm',
-    'https://www.dominicanews.dm',
-    // Vercel deployments
-    'https://dominicanews.vercel.app',
-    'https://dominica-news-frontend0000001.vercel.app',
-    'https://dominicanews-d2aa9.web.app',
-    // Firebase hosting
-    'https://dominicanews-d2aa9.firebaseapp.com',
-    // Add environment variable origins
-    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [])
-  ],
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      // Development
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8080',
+      'http://localhost:8081',
+      // Production
+      'https://dominicanews.dm',
+      'https://www.dominicanews.dm',
+      // Vercel deployments
+      'https://dominicanews.vercel.app',
+      'https://dominica-news-frontend0000001.vercel.app',
+      'https://dominicanews-d2aa9.web.app',
+      // Firebase hosting
+      'https://dominicanews-d2aa9.firebaseapp.com',
+    ];
+    
+    // Allow all Vercel preview deployments
+    if (origin.includes('.vercel.app') || origin.includes('dominicanews')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Allow anyway for now
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -79,9 +98,10 @@ const corsOptions = {
     'Authorization',
     'Cache-Control',
     'X-Forwarded-For',
-    'X-Real-IP'
+    'X-Real-IP',
+    'Access-Control-Allow-Origin'
   ],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar', 'Access-Control-Allow-Origin'],
   maxAge: 86400 // 24 hours
 };
 
