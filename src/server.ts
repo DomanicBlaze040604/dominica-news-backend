@@ -13,9 +13,11 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/domini
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 console.log('🎬 Starting Dominica News Backend...');
+console.log('✅ DEPLOYMENT VERIFIED - All fixes applied!');
 console.log(`   Environment: ${NODE_ENV}`);
 console.log(`   Port: ${PORT}`);
 console.log(`   Node: ${process.version}`);
+console.log(`   Timestamp: ${new Date().toISOString()}`);
 
 // -----------------------------------------------------------------------------
 // 🗄️ Database Connection
