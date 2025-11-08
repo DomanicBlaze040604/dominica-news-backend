@@ -23,15 +23,16 @@ router.get('/menu', getMenuPages);
 router.get('/editorial-team', getEditorialTeamPage);
 router.get('/slug/:slug', getStaticPageBySlug);
 
-// Protected routes - Editors can view and manage static pages
+// Admin routes (when mounted at /api/admin/pages or /api/admin/static-pages)
+// These routes work for both /api/pages and /api/admin/pages mounting
 router.get('/admin', authenticate, requireEditor, getStaticPagesAdmin);
-router.get('/admin/:id', authenticate, requireEditor, getStaticPageById);
 router.post('/admin', authenticate, requireEditor, validateStaticPage, createStaticPage);
-router.put('/admin/:id', authenticate, requireEditor, updateStaticPage);
-router.patch('/admin/:id/toggle-status', authenticate, requireEditor, togglePageStatus);
-
-// Admin-only routes - Only admins can delete pages and reorder menu
-router.delete('/admin/:id', authenticate, requireAdmin, deleteStaticPage);
 router.put('/reorder', authenticate, requireAdmin, reorderMenuPages);
+
+// ID-based routes (work for both public and admin)
+router.get('/:id', authenticate, requireEditor, getStaticPageById);
+router.put('/:id', authenticate, requireEditor, updateStaticPage);
+router.patch('/:id/toggle-status', authenticate, requireEditor, togglePageStatus);
+router.delete('/:id', authenticate, requireAdmin, deleteStaticPage);
 
 export { router as staticPageRoutes };
