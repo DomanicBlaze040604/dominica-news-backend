@@ -1,7 +1,9 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IBreakingNews extends Document {
-  text: string;
+  title: string;
+  link?: string;
+  priority: 'high' | 'medium' | 'low';
   isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -15,12 +17,21 @@ export interface IBreakingNewsModel extends Model<IBreakingNews> {
 }
 
 const BreakingNewsSchema: Schema = new Schema({
-  text: {
+  title: {
     type: String,
-    required: [true, 'Breaking news text is required'],
+    required: [true, 'Breaking news title is required'],
     trim: true,
-    minlength: [5, 'Breaking news text must be at least 5 characters long'],
-    maxlength: [200, 'Breaking news text cannot exceed 200 characters']
+    minlength: [5, 'Breaking news title must be at least 5 characters long'],
+    maxlength: [200, 'Breaking news title cannot exceed 200 characters']
+  },
+  link: {
+    type: String,
+    trim: true
+  },
+  priority: {
+    type: String,
+    enum: ['high', 'medium', 'low'],
+    default: 'high'
   },
   isActive: {
     type: Boolean,

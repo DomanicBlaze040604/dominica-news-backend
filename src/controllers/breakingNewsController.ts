@@ -64,19 +64,19 @@ export const breakingNewsController = {
   // Create breaking news (admin)
   create: async (req: Request, res: Response) => {
     try {
-      const { text, isActive = false } = req.body;
+      const { title, link, priority = 'high', isActive = false } = req.body;
 
-      if (!text || text.trim().length < 5) {
+      if (!title || title.trim().length < 5) {
         return res.status(400).json({
           success: false,
-          message: 'Breaking news text must be at least 5 characters long'
+          message: 'Breaking news title must be at least 5 characters long'
         });
       }
 
-      if (text.length > 200) {
+      if (title.length > 200) {
         return res.status(400).json({
           success: false,
-          message: 'Breaking news text cannot exceed 200 characters'
+          message: 'Breaking news title cannot exceed 200 characters'
         });
       }
 
@@ -86,7 +86,9 @@ export const breakingNewsController = {
       }
 
       const breakingNews = new BreakingNews({
-        text: text.trim(),
+        title: title.trim(),
+        link: link?.trim(),
+        priority,
         isActive,
         createdBy: req.user!.id
       });
@@ -112,7 +114,7 @@ export const breakingNewsController = {
   update: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { text, isActive } = req.body;
+      const { title, link, priority, isActive } = req.body;
 
       const breakingNews = await BreakingNews.findById(id);
       if (!breakingNews) {
@@ -122,23 +124,33 @@ export const breakingNewsController = {
         });
       }
 
-      // Validate text if provided
-      if (text !== undefined) {
-        if (!text || text.trim().length < 5) {
+      // Validate title if provided
+      if (title !== undefined) {
+        if (!title || title.trim().length < 5) {
           return res.status(400).json({
             success: false,
-            message: 'Breaking news text must be at least 5 characters long'
+            message: 'Breaking news title must be at least 5 characters long'
           });
         }
 
-        if (text.length > 200) {
+        if (title.length > 200) {
           return res.status(400).json({
             success: false,
-            message: 'Breaking news text cannot exceed 200 characters'
+            message: 'Breaking news title cannot exceed 200 characters'
           });
         }
 
-        breakingNews.text = text.trim();
+        breakingNews.title = title.trim();
+      }
+
+      // Update link if provided
+      if (link !== undefined) {
+        breakingNews.link = link?.trim();
+      }
+
+      // Update priority if provided
+      if (priority !== undefined) {
+        breakingNews.priority = priority;
       }
 
       // Handle activation/deactivation
