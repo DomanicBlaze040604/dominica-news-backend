@@ -1,57 +1,32 @@
 import express from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
+import {
+  getAllRecycleBinItems,
+  getRecycleBinItemsByType,
+  restoreItem,
+  permanentlyDeleteItem,
+  emptyRecycleBin,
+  emptyRecycleBinByType
+} from '../controllers/recycleBinController';
 
 const router = express.Router();
 
-// Mock recycle bin endpoints - returns empty data for now
-// This prevents 404 errors while keeping the UI functional
-
 // Get all items in recycle bin
-router.get('/', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    data: []
-  });
-});
+router.get('/', authenticate, requireAdmin, getAllRecycleBinItems);
+
+// Empty entire recycle bin (must be before /:type routes)
+router.delete('/empty', authenticate, requireAdmin, emptyRecycleBin);
 
 // Get items by type
-router.get('/:type', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    data: []
-  });
-});
-
-// Restore an item
-router.post('/:type/:id/restore', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Item restored successfully'
-  });
-});
-
-// Permanently delete an item
-router.delete('/:type/:id', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Item permanently deleted'
-  });
-});
-
-// Empty entire recycle bin
-router.delete('/empty', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Recycle bin emptied'
-  });
-});
+router.get('/:type', authenticate, requireAdmin, getRecycleBinItemsByType);
 
 // Empty by type
-router.delete('/:type/empty', authenticate, requireAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    message: `${req.params.type} recycle bin emptied`
-  });
-});
+router.delete('/:type/empty', authenticate, requireAdmin, emptyRecycleBinByType);
+
+// Restore an item
+router.post('/:type/:id/restore', authenticate, requireAdmin, restoreItem);
+
+// Permanently delete an item
+router.delete('/:type/:id', authenticate, requireAdmin, permanentlyDeleteItem);
 
 export { router as recycleBinRoutes };

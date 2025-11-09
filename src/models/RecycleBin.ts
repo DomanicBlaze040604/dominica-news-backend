@@ -1,78 +1,62 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IRecycleBin extends Document {
-  itemType: 'article' | 'category' | 'author' | 'staticPage';
-  itemId: string;
-  itemData: any;
+export interface IRecycleBinItem extends Document {
+  itemType: 'article' | 'category' | 'tag' | 'page' | 'breaking-news';
+  itemId: mongoose.Types.ObjectId;
+  title: string;
+  originalData: any;
   deletedBy: mongoose.Types.ObjectId;
   deletedAt: Date;
   expiresAt: Date;
-  originalCollection: string;
-  canRestore: boolean;
-  metadata: {
-    title?: string;
-    name?: string;
-    slug?: string;
-    status?: string;
-  };
 }
 
-const recycleBinSchema = new Schema<IRecycleBin>(
-  {
-    itemType: {
-      type: String,
-      required: true,
-      enum: ['article', 'category', 'author', 'staticPage'],
-      index: true
-    },
-    itemId: {
-      type: String,
-      required: true
-    },
-    itemData: {
-      type: Schema.Types.Mixed,
-      required: true
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    deletedAt: {
-      type: Date,
-      default: Date.now,
-      index: true
-    },
-    expiresAt: {
-      type: Date,
-      required: true,
-      index: true
-    },
-    originalCollection: {
-      type: String,
-      required: true
-    },
-    canRestore: {
-      type: Boolean,
-      default: true
-    },
-    metadata: {
-      title: String,
-      name: String,
-      slug: String,
-      status: String
-    }
+const RecycleBinSchema = new Schema<IRecycleBinItem>({
+  itemType: {
+    type: String,
+    required: true,
+    enum: ['article', 'category', 'tag', 'page', 'breaking-news']
   },
-  {
-    timestamps: true
+  itemId: {
+    type: Schema.Types.ObjectId,
+    required: true
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  originalData: {
+    type: Schema.Types.Mixed,
+    required: true
+  },
+  deletedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  deletedAt: {
+    type: Date,
+    default: Date.now
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    index: { expires: 0 } // TTL index - auto-delete after expiration
   }
-);
+}, {
+  timestamps: true,
+  toJSON: {
+    transform: function (doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
+});
 
-// Index for automatic cleanup
-recycleBinSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Indexes
+RecycleBinSchema.index({ itemType: 1, deletedAt: -1 });
+RecycleBinSchema.index({ deletedBy: 1 });
+RecycleBinSchema.index({ expiresAt: 1 });
 
-// Index for queries
-recycleBinSchema.index({ itemType: 1, deletedAt: -1 });
-recycleBinSchema.index({ deletedBy: 1, deletedAt: -1 });
-
-export const RecycleBin = mongoose.model<IRecycleBin>('RecycleBin', recycleBinSchema);
+export const RecycleBin = mongoose.model<IRecycleBinItem>('RecycleBin', RecycleBinSchema);
