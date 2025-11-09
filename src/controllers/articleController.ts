@@ -4,7 +4,7 @@ import Author from '../models/Author';
 import { Category } from '../models/Category';
 import { slugify } from '../utils/slugify';
 import { getDominicanTime, toDominicanTime } from '../utils/timezone';
-import { moveToRecycleBin } from './recycleBinController';
+import { addToRecycleBin } from './recycleBinController';
 import mongoose from 'mongoose';
 
 // Create article with rich text content
@@ -345,7 +345,7 @@ export const deleteArticle = async (req: Request, res: Response) => {
     }
 
     // Move to recycle bin instead of permanent deletion
-    await moveToRecycleBin(
+    await addToRecycleBin(
       'article',
       id,
       article.toObject(),
