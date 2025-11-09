@@ -9,10 +9,18 @@ export interface IArticle extends Document {
   featuredImage?: string;
   featuredImageAlt?: string;
   gallery?: string[];
+  embeds?: Array<{
+    type: string; // Any platform: instagram, twitter, youtube, facebook, tiktok, spotify, etc.
+    url?: string;
+    embedCode?: string;
+    caption?: string;
+    width?: string;
+    height?: string;
+  }>;
   author: mongoose.Types.ObjectId;
   category: mongoose.Types.ObjectId;
   tags: string[];
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'archived' | 'scheduled';
   publishedAt?: Date;
   scheduledFor?: Date;
   views: number;
@@ -72,6 +80,30 @@ const ArticleSchema: Schema = new Schema({
   gallery: [{
     type: String
   }],
+  embeds: [{
+    type: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    url: {
+      type: String,
+      trim: true
+    },
+    embedCode: {
+      type: String
+    },
+    caption: {
+      type: String,
+      trim: true
+    },
+    width: {
+      type: String
+    },
+    height: {
+      type: String
+    }
+  }],
   author: {
     type: Schema.Types.ObjectId,
     ref: 'Author',
@@ -89,7 +121,7 @@ const ArticleSchema: Schema = new Schema({
   }],
   status: {
     type: String,
-    enum: ['draft', 'published', 'archived'],
+    enum: ['draft', 'published', 'archived', 'scheduled'],
     default: 'draft'
   },
   publishedAt: {

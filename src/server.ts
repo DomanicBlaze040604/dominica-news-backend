@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import app from './app';
+import { startScheduledPublisher } from './services/scheduledPublisher';
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +67,9 @@ const connectDB = async (): Promise<void> => {
 const startServer = async (): Promise<void> => {
   try {
     await connectDB();
+
+    // Start scheduled article publisher
+    startScheduledPublisher();
 
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('\n🚀 ========================================');

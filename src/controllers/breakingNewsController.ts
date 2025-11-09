@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { BreakingNews } from '../models/BreakingNews';
+import { addToRecycleBin } from './recycleBinController';
 
 export const breakingNewsController = {
   // Get active breaking news (public)
@@ -184,13 +185,24 @@ export const breakingNewsController = {
     try {
       const { id } = req.params;
 
-      const breakingNews = await BreakingNews.findByIdAndDelete(id);
+      const breakingNews = await BreakingNews.findById(id);
       if (!breakingNews) {
         return res.status(404).json({
           success: false,
           message: 'Breaking news not found'
         });
       }
+
+      // Move to recycle bin before deleting
+      await addToRecycleBin(
+        'breaking-news',
+        breakingNews._id,
+        breakingNews.title,
+        breakingNews.toObject(),
+        req.user!.id
+      );
+
+      await BreakingNews.findByIdAndDelete(id);
 
       res.json({
         success: true,

@@ -17,6 +17,8 @@ export const createArticle = async (req: Request, res: Response) => {
       excerpt,
       featuredImage,
       featuredImageAlt,
+      gallery,
+      embeds,
       categoryId,
       authorId,
       tags,
@@ -69,6 +71,8 @@ export const createArticle = async (req: Request, res: Response) => {
       excerpt,
       featuredImage,
       featuredImageAlt,
+      gallery: gallery || [],
+      embeds: embeds || [],
       author: authorId,
       category: categoryId,
       tags: tags || [],
@@ -86,7 +90,12 @@ export const createArticle = async (req: Request, res: Response) => {
 
     // Handle scheduling
     if (scheduledAt) {
-      articleData.scheduledFor = toDominicanTime(scheduledAt);
+      const scheduledDate = new Date(scheduledAt);
+      articleData.scheduledFor = toDominicanTime(scheduledDate);
+      // If scheduled for future, set status to scheduled
+      if (scheduledDate > new Date()) {
+        articleData.status = 'scheduled';
+      }
     }
 
     // Set published date if publishing immediately
@@ -185,6 +194,35 @@ export const getArticles = async (req: Request, res: Response) => {
   }
 };
 
+// Get single article by ID (for editing)
+export const getArticleById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const article = await Article.findById(id)
+      .populate('author', 'name email avatar bio specialization socialMedia')
+      .populate('category', 'name slug color description');
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: article
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching article',
+      error: error.message
+    });
+  }
+};
+
 // Get single article by slug
 export const getArticleBySlug = async (req: Request, res: Response) => {
   try {
@@ -228,6 +266,8 @@ export const updateArticle = async (req: Request, res: Response) => {
       excerpt,
       featuredImage,
       featuredImageAlt,
+      gallery,
+      embeds,
       categoryId,
       authorId,
       status,
@@ -248,6 +288,8 @@ export const updateArticle = async (req: Request, res: Response) => {
     if (excerpt !== undefined) updateData.excerpt = excerpt;
     if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
     if (featuredImageAlt !== undefined) updateData.featuredImageAlt = featuredImageAlt;
+    if (gallery !== undefined) updateData.gallery = gallery;
+    if (embeds !== undefined) updateData.embeds = embeds;
     if (categoryId !== undefined) updateData.category = categoryId;
     if (authorId !== undefined) updateData.author = authorId;
     if (status !== undefined) updateData.status = status;
@@ -287,13 +329,26 @@ export const updateArticle = async (req: Request, res: Response) => {
     }
 
     // Handle status change to published
-    if (status === 'published' && !updateData.publishedAt) {
-      updateData.publishedAt = getDominicanTime();
+    if (status === 'published') {
+      const article = await Article.findById(id);
+      if (article && !article.publishedAt) {
+        updateData.publishedAt = getDominicanTime();
+      }
     }
 
     // Handle scheduling
-    if (scheduledAt) {
-      updateData.scheduledFor = toDominicanTime(scheduledAt);
+    if (scheduledAt !== undefined) {
+      if (scheduledAt) {
+        const scheduledDate = new Date(scheduledAt);
+        updateData.scheduledFor = toDominicanTime(scheduledDate);
+        // If scheduled for future and not explicitly setting status, set to scheduled
+        if (scheduledDate > new Date() && status === undefined) {
+          updateData.status = 'scheduled';
+        }
+      } else {
+        // Clear scheduling
+        updateData.scheduledFor = null;
+      }
     }
 
     const article = await Article.findByIdAndUpdate(id, updateData, {

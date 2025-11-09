@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createArticle,
   getArticles,
+  getArticleById,
   getArticleBySlug,
   updateArticle,
   deleteArticle,
@@ -22,6 +23,12 @@ router.get('/breaking', getBreakingNews);
 router.get('/featured', getFeaturedArticles);
 router.get('/pinned', getPinnedArticles);
 router.get('/category/:categorySlug', optionalAuth, getCategoryArticles);
+
+// Protected routes - Editors and Admins can create and edit
+router.post('/', authenticate, requireEditor, validateArticle, createArticle);
+router.get('/id/:id', authenticate, requireEditor, getArticleById); // Get by ID for editing
+router.put('/:id', authenticate, requireEditor, updateArticle);
+
 // View tracking endpoint
 router.post('/:slug/views', async (req, res) => {
   try {
@@ -35,10 +42,6 @@ router.post('/:slug/views', async (req, res) => {
 
 // Dynamic slug route must be last to avoid conflicts
 router.get('/:slug', optionalAuth, getArticleBySlug);
-
-// Protected routes - Editors and Admins can create and edit
-router.post('/', authenticate, requireEditor, validateArticle, createArticle);
-router.put('/:id', authenticate, requireEditor, updateArticle);
 
 // Admin-only routes - Only admins can delete
 router.delete('/:id', authenticate, requireAdmin, deleteArticle);
