@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { StaticPage } from '../models/StaticPage';
 import { slugify } from '../utils/slugify';
 import { asyncHandler } from '../middleware/errorHandler';
+import { addToRecycleBin } from './recycleBinController';
 
 // Get all static pages (public)
 export const getStaticPages = asyncHandler(async (req: Request, res: Response) => {
@@ -206,7 +207,7 @@ export const updateStaticPage = asyncHandler(async (req: Request, res: Response)
 export const deleteStaticPage = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const page = await StaticPage.findByIdAndDelete(id);
+  const page = await StaticPage.findById(id);
 
   if (!page) {
     return res.status(404).json({
@@ -214,6 +215,17 @@ export const deleteStaticPage = asyncHandler(async (req: Request, res: Response)
       message: 'Static page not found'
     });
   }
+
+  // Move to recycle bin before deleting
+  await addToRecycleBin(
+    'page',
+    page._id,
+    page.title,
+    page.toObject(),
+    req.user!.id
+  );
+
+  await StaticPage.findByIdAndDelete(id);
 
   res.json({
     success: true,

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Category } from '../models/Category';
 import { asyncHandler } from '../middleware/errorHandler';
+import { addToRecycleBin } from './recycleBinController';
 
 // Get all categories
 export const getCategories = asyncHandler(async (req: Request, res: Response) => {
@@ -374,6 +375,15 @@ export const deleteCategory = asyncHandler(async (req: Request, res: Response) =
       );
     }
   }
+
+  // Move to recycle bin before deleting
+  await addToRecycleBin(
+    'category',
+    category._id,
+    category.name,
+    category.toObject(),
+    req.user!.id
+  );
 
   // Delete the category
   await Category.findByIdAndDelete(id);
