@@ -347,14 +347,10 @@ export const deleteArticle = async (req: Request, res: Response) => {
     // Move to recycle bin instead of permanent deletion
     await addToRecycleBin(
       'article',
-      id,
+      article._id,
+      article.title,
       article.toObject(),
-      new mongoose.Types.ObjectId(userId),
-      {
-        title: article.title,
-        slug: article.slug,
-        status: article.status
-      }
+      req.user!.id
     );
 
     // Delete from main collection
