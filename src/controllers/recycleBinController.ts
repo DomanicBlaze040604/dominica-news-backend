@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RecycleBin } from '../models/RecycleBin';
-import { Article } from '../models/Article';
+import Article from '../models/Article';
 import { Category } from '../models/Category';
 import { StaticPage } from '../models/StaticPage';
 import { BreakingNews } from '../models/BreakingNews';
