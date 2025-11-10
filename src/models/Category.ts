@@ -7,6 +7,7 @@ export interface ICategory extends Document {
   displayOrder: number;
   color?: string;
   icon?: string;
+  isPinned: boolean;
   createdAt: Date;
 }
 
@@ -50,6 +51,10 @@ const categorySchema = new Schema<ICategory>(
       type: String,
       trim: true,
       maxlength: [50, 'Icon name cannot exceed 50 characters'],
+    },
+    isPinned: {
+      type: Boolean,
+      default: false,
     },
   },
   {
