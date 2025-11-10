@@ -18,7 +18,8 @@ export interface IArticle extends Document {
     height?: string;
   }>;
   author: mongoose.Types.ObjectId;
-  category: mongoose.Types.ObjectId;
+  category: mongoose.Types.ObjectId; // Primary category
+  categories: mongoose.Types.ObjectId[]; // Multiple categories support
   tags: string[];
   status: 'draft' | 'published' | 'archived' | 'scheduled';
   publishedAt?: Date;
@@ -112,8 +113,12 @@ const ArticleSchema: Schema = new Schema({
   category: {
     type: Schema.Types.ObjectId,
     ref: 'Category',
-    required: [true, 'Category is required']
+    required: [true, 'Primary category is required']
   },
+  categories: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Category'
+  }],
   tags: [{
     type: String,
     trim: true,
@@ -207,6 +212,7 @@ const ArticleSchema: Schema = new Schema({
 ArticleSchema.index({ status: 1, publishedAt: -1 });
 ArticleSchema.index({ author: 1 });
 ArticleSchema.index({ category: 1 });
+ArticleSchema.index({ categories: 1 });
 ArticleSchema.index({ tags: 1 });
 ArticleSchema.index({ isBreaking: 1 });
 ArticleSchema.index({ isFeatured: 1 });

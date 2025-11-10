@@ -9,7 +9,8 @@ import {
   getBreakingNews,
   getFeaturedArticles,
   getCategoryArticles,
-  getPinnedArticles
+  getPinnedArticles,
+  getRelatedArticles
 } from '../controllers/articleController';
 import { authenticate, requireAdmin, requireEditor, optionalAuth } from '../middleware/auth';
 import { validateArticle } from '../middleware/validation';
@@ -23,6 +24,7 @@ router.get('/breaking', getBreakingNews);
 router.get('/featured', getFeaturedArticles);
 router.get('/pinned', getPinnedArticles);
 router.get('/category/:categorySlug', optionalAuth, getCategoryArticles);
+router.get('/:id/related', getRelatedArticles); // Get related articles
 
 // Protected routes - Editors and Admins can create and edit
 router.post('/', authenticate, requireEditor, validateArticle, createArticle);

@@ -20,6 +20,7 @@ export const createArticle = async (req: Request, res: Response) => {
       gallery,
       embeds,
       categoryId,
+      categoryIds, // Multiple categories
       authorId,
       tags,
       status,
@@ -74,7 +75,8 @@ export const createArticle = async (req: Request, res: Response) => {
       gallery: gallery || [],
       embeds: embeds || [],
       author: authorId,
-      category: categoryId,
+      category: categoryId, // Primary category
+      categories: categoryIds || [categoryId], // Multiple categories (include primary)
       tags: tags || [],
       status: status || 'draft',
       seo: {
@@ -109,8 +111,8 @@ export const createArticle = async (req: Request, res: Response) => {
     // Update author's article count
     await Author.findByIdAndUpdate(authorId, { $inc: { articlesCount: 1 } });
 
-    // Populate author and category for response
-    await article.populate(['author', 'category']);
+    // Populate author and categories for response
+    await article.populate(['author', 'category', 'categories']);
 
     res.status(201).json({
       success: true,
@@ -169,6 +171,7 @@ export const getArticles = async (req: Request, res: Response) => {
       Article.find(query)
         .populate('author', 'name email avatar specialization')
         .populate('category', 'name slug color')
+        .populate('categories', 'name slug color')
         .sort({ isPinned: -1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -201,7 +204,8 @@ export const getArticleById = async (req: Request, res: Response) => {
 
     const article = await Article.findById(id)
       .populate('author', 'name email avatar bio specialization socialMedia')
-      .populate('category', 'name slug color description');
+      .populate('category', 'name slug color description')
+      .populate('categories', 'name slug color description');
 
     if (!article) {
       return res.status(404).json({
@@ -230,7 +234,8 @@ export const getArticleBySlug = async (req: Request, res: Response) => {
 
     const article = await Article.findOne({ slug })
       .populate('author', 'name email avatar bio specialization socialMedia')
-      .populate('category', 'name slug color description');
+      .populate('category', 'name slug color description')
+      .populate('categories', 'name slug color description');
 
     if (!article) {
       return res.status(404).json({
@@ -269,6 +274,7 @@ export const updateArticle = async (req: Request, res: Response) => {
       gallery,
       embeds,
       categoryId,
+      categoryIds, // Multiple categories
       authorId,
       status,
       scheduledAt,
@@ -290,7 +296,14 @@ export const updateArticle = async (req: Request, res: Response) => {
     if (featuredImageAlt !== undefined) updateData.featuredImageAlt = featuredImageAlt;
     if (gallery !== undefined) updateData.gallery = gallery;
     if (embeds !== undefined) updateData.embeds = embeds;
-    if (categoryId !== undefined) updateData.category = categoryId;
+    if (categoryId !== undefined) {
+      updateData.category = categoryId;
+      // If primary category changes, ensure it's in categories array
+      if (categoryIds === undefined) {
+        updateData.categories = [categoryId];
+      }
+    }
+    if (categoryIds !== undefined) updateData.categories = categoryIds;
     if (authorId !== undefined) updateData.author = authorId;
     if (status !== undefined) updateData.status = status;
     if (isPinned !== undefined) updateData.isPinned = isPinned;
@@ -354,7 +367,7 @@ export const updateArticle = async (req: Request, res: Response) => {
     const article = await Article.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true
-    }).populate(['author', 'category']);
+    }).populate(['author', 'category', 'categories']);
 
     if (!article) {
       return res.status(404).json({
@@ -436,6 +449,7 @@ export const getBreakingNews = async (req: Request, res: Response) => {
     })
       .populate('author', 'name')
       .populate('category', 'name color')
+      .populate('categories', 'name color')
       .sort({ publishedAt: -1 })
       .limit(5);
 
@@ -461,6 +475,7 @@ export const getFeaturedArticles = async (req: Request, res: Response) => {
     })
       .populate('author', 'name avatar')
       .populate('category', 'name color')
+      .populate('categories', 'name color')
       .sort({ publishedAt: -1 })
       .limit(6);
 
@@ -500,19 +515,26 @@ export const getCategoryArticles = async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    // Get articles for this category
+    // Get articles for this category (check both primary category and categories array)
     const [articles, totalArticles] = await Promise.all([
       Article.find({ 
-        category: category._id,
+        $or: [
+          { category: category._id },
+          { categories: category._id }
+        ],
         status: status
       })
         .populate('author', 'name email avatar specialization')
         .populate('category', 'name slug color description')
+        .populate('categories', 'name slug color description')
         .sort({ isPinned: -1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
       Article.countDocuments({ 
-        category: category._id,
+        $or: [
+          { category: category._id },
+          { categories: category._id }
+        ],
         status: status
       })
     ]);
@@ -554,6 +576,7 @@ export const getPinnedArticles = async (req: Request, res: Response) => {
     })
       .populate('author', 'name email avatar specialization')
       .populate('category', 'name slug color description')
+      .populate('categories', 'name slug color description')
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limitNum);
 
@@ -568,6 +591,56 @@ export const getPinnedArticles = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching pinned articles',
+      error: error.message
+    });
+  }
+};
+
+// Get related articles
+export const getRelatedArticles = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { limit = 6 } = req.query;
+    const limitNum = parseInt(limit as string);
+
+    // Get the current article
+    const currentArticle = await Article.findById(id);
+    if (!currentArticle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article not found'
+      });
+    }
+
+    // Find related articles based on:
+    // 1. Same categories
+    // 2. Same tags
+    // 3. Same author
+    // Exclude current article
+    const relatedArticles = await Article.find({
+      _id: { $ne: id },
+      status: 'published',
+      $or: [
+        { category: currentArticle.category },
+        { categories: { $in: currentArticle.categories || [] } },
+        { tags: { $in: currentArticle.tags || [] } },
+        { author: currentArticle.author }
+      ]
+    })
+      .populate('author', 'name avatar')
+      .populate('category', 'name slug color')
+      .populate('categories', 'name slug color')
+      .sort({ publishedAt: -1 })
+      .limit(limitNum);
+
+    res.json({
+      success: true,
+      data: relatedArticles
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching related articles',
       error: error.message
     });
   }
