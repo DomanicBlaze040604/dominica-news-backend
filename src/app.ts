@@ -26,6 +26,7 @@ import { recycleBinRoutes } from './routes/recycleBin';
 import { analyticsRoutes } from './routes/analytics';
 import { tagRoutes } from './routes/tags';
 import { mediaRoutes } from './routes/media';
+import { liveUpdateRoutes } from './routes/liveUpdates';
 import { errorHandler } from './middleware/errorHandler';
 import { checkMaintenanceMode } from './middleware/maintenance';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -217,6 +218,7 @@ app.use('/api/admin/recycle-bin', recycleBinRoutes);
 app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/admin/tags', tagRoutes);
 app.use('/api/admin/media', mediaRoutes);
+app.use('/api/admin/live-updates', liveUpdateRoutes);
 console.log('Admin routes registered successfully');
 
 // Regular API routes
@@ -239,6 +241,7 @@ app.use('/api/static-pages', staticPageRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recycle-bin', recycleBinRoutes);
 app.use('/api/tags', tagRoutes);
+app.use('/api/live-updates', liveUpdateRoutes);
 
 // Sitemap routes (served at root level)
 app.use('/', sitemapRoutes);

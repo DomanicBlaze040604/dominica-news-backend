@@ -42,6 +42,7 @@ export interface ISettings extends Document {
   customJS?: string;
   footerText?: string;
   copyrightText?: string;
+  homepageCategories: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -212,7 +213,11 @@ const SettingsSchema: Schema = new Schema({
     type: String,
     default: '© 2024 Dominica News. All rights reserved.',
     maxlength: [200, 'Copyright text cannot exceed 200 characters']
-  }
+  },
+  homepageCategories: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Category'
+  }]
 }, {
   timestamps: true,
   toJSON: {
