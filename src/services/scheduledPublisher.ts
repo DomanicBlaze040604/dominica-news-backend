@@ -9,11 +9,23 @@ export const publishScheduledArticles = async () => {
   try {
     const now = getDominicanTime();
     
+    // Debug logging
+    console.log(`🔍 Checking for scheduled articles at ${now.toISOString()}`);
+    
     // Find all scheduled articles that should be published
     const articlesToPublish = await Article.find({
       status: 'scheduled',
       scheduledFor: { $lte: now }
     });
+
+    // Debug: Show all scheduled articles
+    const allScheduled = await Article.find({ status: 'scheduled' });
+    if (allScheduled.length > 0) {
+      console.log(`📋 Found ${allScheduled.length} scheduled articles:`);
+      allScheduled.forEach(a => {
+        console.log(`   - "${a.title}" scheduled for ${a.scheduledFor?.toISOString()}`);
+      });
+    }
 
     if (articlesToPublish.length === 0) {
       return {
