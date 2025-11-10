@@ -51,6 +51,20 @@ export const validateCategory = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Display order must be a non-negative integer'),
+  body('isPinned')
+    .optional()
+    .isBoolean()
+    .withMessage('isPinned must be a boolean value'),
+  body('color')
+    .optional()
+    .trim()
+    .matches(/^#[0-9A-Fa-f]{6}$/)
+    .withMessage('Color must be a valid hex color code'),
+  body('icon')
+    .optional()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage('Icon name cannot exceed 50 characters'),
 ];
 
 // Article validation
