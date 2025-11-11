@@ -283,6 +283,8 @@ export const deleteUpdate = async (req: Request, res: Response) => {
   try {
     const { id, updateId } = req.params;
 
+    console.log('Delete update request:', { liveUpdateId: id, updateId });
+
     const liveUpdate = await LiveUpdate.findById(id);
 
     if (!liveUpdate) {
@@ -292,10 +294,28 @@ export const deleteUpdate = async (req: Request, res: Response) => {
       });
     }
 
+    const initialCount = liveUpdate.updates.length;
+    console.log('Initial updates count:', initialCount);
+
     // Remove the update from the updates array
+    // The updateId comes as the transformed 'id' but we need to compare with '_id'
     liveUpdate.updates = liveUpdate.updates.filter(
-      (update: any) => update._id.toString() !== updateId
+      (update: any) => {
+        const matches = update._id.toString() === updateId;
+        console.log('Comparing:', { updateId: update._id.toString(), targetId: updateId, matches });
+        return !matches;
+      }
     );
+
+    const finalCount = liveUpdate.updates.length;
+    console.log('Final updates count:', finalCount);
+
+    if (initialCount === finalCount) {
+      return res.status(404).json({
+        success: false,
+        message: 'Update not found in live update'
+      });
+    }
 
     await liveUpdate.save();
     await liveUpdate.populate(['author', 'category', 'updates.author']);
@@ -306,6 +326,7 @@ export const deleteUpdate = async (req: Request, res: Response) => {
       data: liveUpdate
     });
   } catch (error: any) {
+    console.error('Error deleting update:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting update',
