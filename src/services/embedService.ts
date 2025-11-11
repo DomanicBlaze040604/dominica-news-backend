@@ -25,9 +25,11 @@ export class EmbedService {
 
   /**
    * Fetch embed HTML from Twitter oEmbed API
+   * Falls back to twitframe if API fails
    */
   static async getTwitterEmbed(url: string): Promise<EmbedResult> {
     try {
+      // Try official oEmbed API first
       const response = await axios.get('https://publish.twitter.com/oembed', {
         params: {
           url,
@@ -43,39 +45,81 @@ export class EmbedService {
         url,
       };
     } catch (error: any) {
-      console.error('Twitter embed error:', error.message);
-      throw new Error('Failed to fetch Twitter embed');
+      console.error('Twitter embed error, using fallback:', error.message);
+      
+      // Fallback: Use twitframe (no API key needed)
+      const encodedUrl = encodeURIComponent(url);
+      const iframeHtml = `
+        <iframe 
+          src="https://twitframe.com/show?url=${encodedUrl}" 
+          width="500" 
+          height="600" 
+          style="border:none;overflow:hidden;max-width:100%;" 
+          frameborder="0"
+          allowfullscreen
+        ></iframe>
+      `;
+
+      return {
+        html: iframeHtml,
+        provider: 'twitter',
+        url,
+      };
     }
   }
 
   /**
    * Fetch embed HTML from Instagram oEmbed API
+   * Falls back to iframe embed if API fails
    */
   static async getInstagramEmbed(url: string): Promise<EmbedResult> {
     try {
-      const accessToken = `${this.FACEBOOK_APP_ID}|${this.FACEBOOK_APP_SECRET}`;
-      
-      if (!this.FACEBOOK_APP_ID || !this.FACEBOOK_APP_SECRET) {
-        throw new Error('Instagram embeds require FACEBOOK_APP_ID and FACEBOOK_APP_SECRET');
-      }
+      // Try official oEmbed API first (requires Facebook App)
+      if (this.FACEBOOK_APP_ID && this.FACEBOOK_APP_SECRET) {
+        const accessToken = `${this.FACEBOOK_APP_ID}|${this.FACEBOOK_APP_SECRET}`;
+        const response = await axios.get('https://graph.facebook.com/v17.0/instagram_oembed', {
+          params: {
+            url,
+            access_token: accessToken,
+            omitscript: false,
+          },
+          timeout: 10000,
+        });
 
-      const response = await axios.get('https://graph.facebook.com/v17.0/instagram_oembed', {
-        params: {
+        return {
+          html: response.data.html,
+          provider: 'instagram',
           url,
-          access_token: accessToken,
-          omitscript: false,
-        },
-        timeout: 10000,
-      });
+        };
+      }
+      
+      // Fallback: Use iframe embed (no API key needed)
+      const postId = url.split('/p/')[1]?.split('/')[0];
+      if (!postId) {
+        throw new Error('Invalid Instagram URL');
+      }
+      
+      const iframeHtml = `
+        <iframe 
+          src="https://www.instagram.com/p/${postId}/embed" 
+          width="500" 
+          height="680" 
+          frameborder="0" 
+          scrolling="no" 
+          allowtransparency="true"
+          allow="encrypted-media"
+          style="border:none;overflow:hidden;max-width:100%;"
+        ></iframe>
+      `;
 
       return {
-        html: response.data.html,
+        html: iframeHtml,
         provider: 'instagram',
         url,
       };
     } catch (error: any) {
       console.error('Instagram embed error:', error.message);
-      throw new Error('Failed to fetch Instagram embed. Make sure FACEBOOK_APP_ID and FACEBOOK_APP_SECRET are set.');
+      throw new Error('Failed to fetch Instagram embed');
     }
   }
 
@@ -105,32 +149,52 @@ export class EmbedService {
 
   /**
    * Fetch embed HTML from Facebook oEmbed API
+   * Falls back to iframe embed if API fails
    */
   static async getFacebookEmbed(url: string): Promise<EmbedResult> {
     try {
-      const accessToken = `${this.FACEBOOK_APP_ID}|${this.FACEBOOK_APP_SECRET}`;
-      
-      if (!this.FACEBOOK_APP_ID || !this.FACEBOOK_APP_SECRET) {
-        throw new Error('Facebook embeds require FACEBOOK_APP_ID and FACEBOOK_APP_SECRET');
-      }
+      // Try official oEmbed API first (requires Facebook App)
+      if (this.FACEBOOK_APP_ID && this.FACEBOOK_APP_SECRET) {
+        const accessToken = `${this.FACEBOOK_APP_ID}|${this.FACEBOOK_APP_SECRET}`;
+        const response = await axios.get('https://graph.facebook.com/v17.0/oembed_post', {
+          params: {
+            url,
+            access_token: accessToken,
+            omitscript: false,
+          },
+          timeout: 10000,
+        });
 
-      const response = await axios.get('https://graph.facebook.com/v17.0/oembed_post', {
-        params: {
+        return {
+          html: response.data.html,
+          provider: 'facebook',
           url,
-          access_token: accessToken,
-          omitscript: false,
-        },
-        timeout: 10000,
-      });
+        };
+      }
+      
+      // Fallback: Use Facebook's plugin iframe (no API key needed)
+      const encodedUrl = encodeURIComponent(url);
+      const iframeHtml = `
+        <iframe 
+          src="https://www.facebook.com/plugins/post.php?href=${encodedUrl}&show_text=true&width=500" 
+          width="500" 
+          height="680" 
+          style="border:none;overflow:hidden;max-width:100%;" 
+          scrolling="no" 
+          frameborder="0" 
+          allowfullscreen="true" 
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        ></iframe>
+      `;
 
       return {
-        html: response.data.html,
+        html: iframeHtml,
         provider: 'facebook',
         url,
       };
     } catch (error: any) {
       console.error('Facebook embed error:', error.message);
-      throw new Error('Failed to fetch Facebook embed. Make sure FACEBOOK_APP_ID and FACEBOOK_APP_SECRET are set.');
+      throw new Error('Failed to fetch Facebook embed');
     }
   }
 
