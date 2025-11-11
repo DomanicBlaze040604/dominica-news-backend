@@ -27,6 +27,7 @@ import { analyticsRoutes } from './routes/analytics';
 import { tagRoutes } from './routes/tags';
 import { mediaRoutes } from './routes/media';
 import { liveUpdateRoutes } from './routes/liveUpdates';
+import { embedRoutes } from './routes/embeds';
 import { errorHandler } from './middleware/errorHandler';
 import { checkMaintenanceMode } from './middleware/maintenance';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -242,6 +243,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recycle-bin', recycleBinRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/live-updates', liveUpdateRoutes);
+app.use('/api/embeds', embedRoutes);
 
 // Sitemap routes (served at root level)
 app.use('/', sitemapRoutes);

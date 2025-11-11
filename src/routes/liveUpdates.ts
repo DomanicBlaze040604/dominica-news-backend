@@ -7,6 +7,7 @@ import {
   addUpdate,
   updateLiveUpdate,
   deleteLiveUpdate,
+  deleteUpdate,
   getLiveUpdatesByType
 } from '../controllers/liveUpdateController';
 import { authenticate, requireAdmin, requireEditor } from '../middleware/auth';
@@ -26,5 +27,6 @@ router.put('/:id', authenticate, updateLiveUpdate);
 
 // Admin only
 router.delete('/:id', authenticate, deleteLiveUpdate);
+router.delete('/:id/updates/:updateId', authenticate, deleteUpdate);
 
 export { router as liveUpdateRoutes };

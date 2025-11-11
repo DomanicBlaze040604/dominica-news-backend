@@ -278,6 +278,42 @@ export const deleteLiveUpdate = async (req: Request, res: Response) => {
   }
 };
 
+// Delete a specific update from live update
+export const deleteUpdate = async (req: Request, res: Response) => {
+  try {
+    const { id, updateId } = req.params;
+
+    const liveUpdate = await LiveUpdate.findById(id);
+
+    if (!liveUpdate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live update not found'
+      });
+    }
+
+    // Remove the update from the updates array
+    liveUpdate.updates = liveUpdate.updates.filter(
+      (update: any) => update._id.toString() !== updateId
+    );
+
+    await liveUpdate.save();
+    await liveUpdate.populate(['author', 'category', 'updates.author']);
+
+    res.json({
+      success: true,
+      message: 'Update deleted successfully',
+      data: liveUpdate
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting update',
+      error: error.message
+    });
+  }
+};
+
 // Get live updates by type
 export const getLiveUpdatesByType = async (req: Request, res: Response) => {
   try {
