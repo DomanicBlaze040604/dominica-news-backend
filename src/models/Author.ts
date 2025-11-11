@@ -76,7 +76,7 @@ const AuthorSchema: Schema = new Schema({
   },
   specialization: [{
     type: String,
-    enum: ['Politics', 'Sports', 'Business', 'Technology', 'Health', 'Entertainment', 'Culture', 'Environment', 'Education', 'Tourism', 'Weather', 'World News', 'Crime', 'Caribbean', 'Breaking News']
+    maxlength: [50, 'Specialization cannot exceed 50 characters']
   }],
   isActive: {
     type: Boolean,
@@ -96,11 +96,18 @@ const AuthorSchema: Schema = new Schema({
   },
   phone: {
     type: String,
-    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+    match: [/^[\+]?[\d]{1,20}$/, 'Please enter a valid phone number']
   },
   website: {
     type: String,
-    match: [/^https?:\/\/.+/, 'Please enter a valid website URL']
+    validate: {
+      validator: function(v: string) {
+        if (!v) return true; // Allow empty
+        // Allow URLs with or without protocol
+        return /^(https?:\/\/)?.+\..+/.test(v);
+      },
+      message: 'Please enter a valid website URL'
+    }
   }
 }, {
   timestamps: true,
