@@ -169,9 +169,9 @@ export const getArticles = async (req: Request, res: Response) => {
     // Get articles with pagination
     const [articles, total] = await Promise.all([
       Article.find(query)
-        .populate('author', 'name email avatar specialization')
-        .populate('category', 'name slug color')
-        .populate('categories', 'name slug color')
+        .populate('author', '_id name email avatar specialization')
+        .populate('category', '_id name slug color')
+        .populate('categories', '_id name slug color')
         .sort({ isPinned: -1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -203,9 +203,9 @@ export const getArticleById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const article = await Article.findById(id)
-      .populate('author', 'name email avatar bio specialization socialMedia')
-      .populate('category', 'name slug color description')
-      .populate('categories', 'name slug color description');
+      .populate('author', '_id name email avatar bio specialization socialMedia')
+      .populate('category', '_id name slug color description')
+      .populate('categories', '_id name slug color description');
 
     if (!article) {
       return res.status(404).json({
@@ -233,9 +233,9 @@ export const getArticleBySlug = async (req: Request, res: Response) => {
     const { slug } = req.params;
 
     const article = await Article.findOne({ slug })
-      .populate('author', 'name email avatar bio specialization socialMedia')
-      .populate('category', 'name slug color description')
-      .populate('categories', 'name slug color description');
+      .populate('author', '_id name email avatar bio specialization socialMedia')
+      .populate('category', '_id name slug color description')
+      .populate('categories', '_id name slug color description');
 
     if (!article) {
       return res.status(404).json({
@@ -447,9 +447,9 @@ export const getBreakingNews = async (req: Request, res: Response) => {
       status: 'published',
       isBreaking: true
     })
-      .populate('author', 'name')
-      .populate('category', 'name color')
-      .populate('categories', 'name color')
+      .populate('author', '_id name')
+      .populate('category', '_id name color')
+      .populate('categories', '_id name color')
       .sort({ publishedAt: -1 })
       .limit(5);
 
@@ -473,9 +473,9 @@ export const getFeaturedArticles = async (req: Request, res: Response) => {
       status: 'published',
       isFeatured: true
     })
-      .populate('author', 'name avatar')
-      .populate('category', 'name color')
-      .populate('categories', 'name color')
+      .populate('author', '_id name avatar')
+      .populate('category', '_id name color')
+      .populate('categories', '_id name color')
       .sort({ publishedAt: -1 })
       .limit(6);
 
@@ -524,9 +524,9 @@ export const getCategoryArticles = async (req: Request, res: Response) => {
         ],
         status: status
       })
-        .populate('author', 'name email avatar specialization')
-        .populate('category', 'name slug color description')
-        .populate('categories', 'name slug color description')
+        .populate('author', '_id name email avatar specialization')
+        .populate('category', '_id name slug color description')
+        .populate('categories', '_id name slug color description')
         .sort({ isPinned: -1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -574,9 +574,9 @@ export const getPinnedArticles = async (req: Request, res: Response) => {
       status: 'published',
       isPinned: true
     })
-      .populate('author', 'name email avatar specialization')
-      .populate('category', 'name slug color description')
-      .populate('categories', 'name slug color description')
+      .populate('author', '_id name email avatar specialization')
+      .populate('category', '_id name slug color description')
+      .populate('categories', '_id name slug color description')
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limitNum);
 
@@ -627,9 +627,9 @@ export const getRelatedArticles = async (req: Request, res: Response) => {
         { author: currentArticle.author }
       ]
     })
-      .populate('author', 'name avatar')
-      .populate('category', 'name slug color')
-      .populate('categories', 'name slug color')
+      .populate('author', '_id name avatar')
+      .populate('category', '_id name slug color')
+      .populate('categories', '_id name slug color')
       .sort({ publishedAt: -1 })
       .limit(limitNum);
 
