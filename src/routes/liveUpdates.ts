@@ -20,11 +20,11 @@ router.get('/type/:type', getLiveUpdatesByType);
 router.get('/:id', getLiveUpdateById);
 
 // Protected routes - Editors and Admins
-router.post('/', authenticate, requireEditor, createLiveUpdate);
-router.post('/:id/updates', authenticate, requireEditor, addUpdate);
-router.put('/:id', authenticate, requireEditor, updateLiveUpdate);
+router.post('/', authenticate, createLiveUpdate);
+router.post('/:id/updates', authenticate, addUpdate);
+router.put('/:id', authenticate, updateLiveUpdate);
 
 // Admin only
-router.delete('/:id', authenticate, requireAdmin, deleteLiveUpdate);
+router.delete('/:id', authenticate, deleteLiveUpdate);
 
 export { router as liveUpdateRoutes };

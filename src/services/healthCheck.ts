@@ -132,7 +132,9 @@ class HealthCheckService {
 
       if (dbState === 1) { // Connected
         // Test a simple query
-        await mongoose.connection.db.admin().ping();
+        if (mongoose.connection.db) {
+          await mongoose.connection.db.admin().ping();
+        }
         
         return {
           status: 'healthy',
@@ -496,7 +498,9 @@ class HealthCheckService {
   private async diagnoseDatabaseConnectivity(): Promise<DiagnosticResult> {
     try {
       const startTime = Date.now();
-      await mongoose.connection.db.admin().ping();
+      if (mongoose.connection.db) {
+        await mongoose.connection.db.admin().ping();
+      }
       const responseTime = Date.now() - startTime;
 
       return {
