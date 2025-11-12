@@ -315,13 +315,12 @@ export const updateArticle = async (req: Request, res: Response) => {
     if (location !== undefined) updateData.location = location;
     if (language !== undefined) updateData.language = language;
 
-    // Handle SEO fields - only update if provided
-    if (seoTitle !== undefined || seoDescription !== undefined) {
-      // Get existing article to preserve other SEO fields
-      const existingArticle = await Article.findById(id);
-      updateData.seo = existingArticle?.seo || {};
-      if (seoTitle !== undefined) updateData.seo.metaTitle = seoTitle;
-      if (seoDescription !== undefined) updateData.seo.metaDescription = seoDescription;
+    // Handle SEO fields - update individual fields without overwriting
+    if (seoTitle !== undefined) {
+      updateData['seo.metaTitle'] = seoTitle;
+    }
+    if (seoDescription !== undefined) {
+      updateData['seo.metaDescription'] = seoDescription;
     }
 
     // Handle slug - use provided slug or generate from title
