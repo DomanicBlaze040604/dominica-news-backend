@@ -100,14 +100,20 @@ const LOCK_TIME = 2 * 60 * 60 * 1000; // 2 hours
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('passwordHash')) return next();
+  if (!this.isModified('passwordHash')) {
+    console.log('⏭️  Password not modified, skipping hash');
+    return next();
+  }
 
   try {
+    console.log('🔐 Hashing password...');
     const salt = await bcrypt.genSalt(12);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
     this.passwordChangedAt = new Date();
+    console.log('✅ Password hashed successfully');
     next();
   } catch (error) {
+    console.error('❌ Password hashing error:', error);
     next(error as Error);
   }
 });

@@ -75,7 +75,9 @@ export const createUser = asyncHandler(async (
     isActive: true,
   });
 
+  console.log('🔐 Creating user with password length:', password?.length);
   await user.save();
+  console.log('✅ User saved, password should be hashed now');
 
   res.status(201).json({
     success: true,
