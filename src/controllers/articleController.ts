@@ -316,10 +316,12 @@ export const updateArticle = async (req: Request, res: Response) => {
     if (language !== undefined) updateData.language = language;
 
     // Handle SEO fields - only update if provided
-    if (seoTitle || seoDescription) {
-      updateData.seo = {};
-      if (seoTitle) updateData.seo.metaTitle = seoTitle;
-      if (seoDescription) updateData.seo.metaDescription = seoDescription;
+    if (seoTitle !== undefined || seoDescription !== undefined) {
+      // Get existing article to preserve other SEO fields
+      const existingArticle = await Article.findById(id);
+      updateData.seo = existingArticle?.seo || {};
+      if (seoTitle !== undefined) updateData.seo.metaTitle = seoTitle;
+      if (seoDescription !== undefined) updateData.seo.metaDescription = seoDescription;
     }
 
     // Handle slug - use provided slug or generate from title
