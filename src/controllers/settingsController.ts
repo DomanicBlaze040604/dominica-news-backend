@@ -76,6 +76,8 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
   const updateData = req.body;
 
+  console.log('📝 Updating settings with data:', updateData);
+
   let settings = await Settings.findOne();
   
   if (!settings) {
@@ -84,8 +86,19 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
   } else {
     // Update existing settings
     Object.assign(settings, updateData);
+    
+    // Explicitly handle homepage settings
+    if (updateData.homepageSectionOrder !== undefined) {
+      (settings as any).homepageSectionOrder = updateData.homepageSectionOrder;
+    }
+    if (updateData.homepageCategories !== undefined) {
+      (settings as any).homepageCategories = updateData.homepageCategories;
+    }
+    
     await settings.save();
   }
+
+  console.log('✅ Settings updated successfully');
 
   res.json({
     success: true,
@@ -288,6 +301,12 @@ export const getIndividualSetting = asyncHandler(async (req: Request, res: Respo
       case 'seo_canonical_url':
         value = settings.seoSettings?.canonicalUrl || '';
         break;
+      case 'homepage_section_order':
+        value = (settings as any).homepageSectionOrder || 'latest-first';
+        break;
+      case 'homepage_categories':
+        value = JSON.stringify((settings as any).homepageCategories || []);
+        break;
       default:
         return res.status(404).json({
           success: false,
@@ -335,6 +354,8 @@ export const getAllIndividualSettings = asyncHandler(async (req: Request, res: R
       { key: 'seo_keywords', value: settings.seoSettings?.keywords?.join(', ') || '', description: 'Default keywords' },
       { key: 'seo_og_image', value: settings.seoSettings?.ogImage || '', description: 'Default Open Graph image' },
       { key: 'seo_canonical_url', value: settings.seoSettings?.canonicalUrl || '', description: 'Default canonical URL' },
+      { key: 'homepage_section_order', value: (settings as any).homepageSectionOrder || 'latest-first', description: 'Homepage section order' },
+      { key: 'homepage_categories', value: JSON.stringify((settings as any).homepageCategories || []), description: 'Homepage categories' },
     ];
 
     settingsArray.push(...settingsMap.map(setting => ({
@@ -445,6 +466,12 @@ export const updateIndividualSetting = asyncHandler(async (req: Request, res: Re
     case 'seo_canonical_url':
       if (!settings.seoSettings) settings.seoSettings = {};
       (settings.seoSettings as any).canonicalUrl = value;
+      break;
+    case 'homepage_section_order':
+      (settings as any).homepageSectionOrder = value;
+      break;
+    case 'homepage_categories':
+      (settings as any).homepageCategories = value ? JSON.parse(value) : [];
       break;
     default:
       return res.status(400).json({

@@ -43,6 +43,7 @@ export interface ISettings extends Document {
   footerText?: string;
   copyrightText?: string;
   homepageCategories: mongoose.Types.ObjectId[];
+  homepageSectionOrder?: 'latest-first' | 'featured-first';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -217,7 +218,12 @@ const SettingsSchema: Schema = new Schema({
   homepageCategories: [{
     type: Schema.Types.ObjectId,
     ref: 'Category'
-  }]
+  }],
+  homepageSectionOrder: {
+    type: String,
+    enum: ['latest-first', 'featured-first'],
+    default: 'latest-first'
+  }
 }, {
   timestamps: true,
   toJSON: {
