@@ -35,18 +35,24 @@ const AuthorSchema: Schema = new Schema({
   },
   slug: {
     type: String,
-    required: true,
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens']
+    sparse: true, // Allow null/undefined during creation
   },
   email: {
     type: String,
     required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    trim: true,
+    validate: {
+      validator: function(v: string) {
+        // More flexible email validation
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: 'Please enter a valid email address'
+    }
   },
   bio: {
     type: String,
