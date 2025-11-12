@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IAuthor extends Document {
   name: string;
   slug: string;
-  email: string;
+  email?: string;
   bio?: string;
   avatar?: string;
   title?: string;
@@ -42,12 +42,14 @@ const AuthorSchema: Schema = new Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: false,
     unique: true,
+    sparse: true, // Allow multiple null values
     lowercase: true,
     trim: true,
     validate: {
       validator: function(v: string) {
+        if (!v) return true; // Allow empty
         // More flexible email validation
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },

@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
 import { deleteUploadedFile } from '../middleware/upload';
+import { addMediaFile } from '../routes/media';
 
 // Image processing configuration
 const IMAGE_VARIANTS = {
@@ -170,11 +171,28 @@ export const uploadImage = async (req: Request, res: Response) => {
       mimetype: file.mimetype
     };
 
+    // Register in media library
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const mediaFile = await addMediaFile({
+      name: file.filename,
+      originalName: file.originalname,
+      url: originalUrl,
+      type: 'image',
+      mimeType: file.mimetype,
+      size: originalSize,
+      dimensions: metadata.width && metadata.height 
+        ? { width: metadata.width, height: metadata.height }
+        : undefined,
+      alt: altText || file.originalname,
+      uploadedBy: userId
+    });
+
     res.json({
       success: true,
       message: 'Image uploaded and processed successfully',
       data: {
-        image: imageData
+        image: imageData,
+        mediaFile: mediaFile
       }
     });
   } catch (error: any) {
