@@ -6,7 +6,7 @@ import { toDominicanTime } from '../utils/timezone';
 export const getLiveUpdates = async (req: Request, res: Response) => {
   try {
     const {
-      status = 'active',
+      status,
       type,
       limit = 10,
       page = 1
@@ -14,6 +14,8 @@ export const getLiveUpdates = async (req: Request, res: Response) => {
 
     const query: any = {};
     
+    // Only filter by status if explicitly provided
+    // This allows admin panel to see all updates (active, paused, ended)
     if (status) query.status = status;
     if (type) query.type = type;
 
