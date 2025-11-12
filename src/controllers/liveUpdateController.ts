@@ -278,6 +278,61 @@ export const deleteLiveUpdate = async (req: Request, res: Response) => {
   }
 };
 
+// Edit a specific update in live update
+export const editUpdate = async (req: Request, res: Response) => {
+  try {
+    const { id, updateId } = req.params;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({
+        success: false,
+        message: 'Content is required'
+      });
+    }
+
+    const liveUpdate = await LiveUpdate.findById(id);
+
+    if (!liveUpdate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Live update not found'
+      });
+    }
+
+    // Find and update the specific update
+    const updateToEdit = liveUpdate.updates.find(
+      (update: any) => update._id.toString() === updateId
+    );
+
+    if (!updateToEdit) {
+      return res.status(404).json({
+        success: false,
+        message: 'Update not found in live update'
+      });
+    }
+
+    // Update the content
+    updateToEdit.content = content;
+
+    await liveUpdate.save();
+    await liveUpdate.populate(['author', 'category', 'updates.author']);
+
+    res.json({
+      success: true,
+      message: 'Update edited successfully',
+      data: liveUpdate
+    });
+  } catch (error: any) {
+    console.error('Error editing update:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error editing update',
+      error: error.message
+    });
+  }
+};
+
 // Delete a specific update from live update
 export const deleteUpdate = async (req: Request, res: Response) => {
   try {

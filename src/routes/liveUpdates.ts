@@ -7,6 +7,7 @@ import {
   addUpdate,
   updateLiveUpdate,
   deleteLiveUpdate,
+  editUpdate,
   deleteUpdate,
   getLiveUpdatesByType
 } from '../controllers/liveUpdateController';
@@ -24,6 +25,7 @@ router.get('/:id', getLiveUpdateById);
 router.post('/', authenticate, createLiveUpdate);
 router.post('/:id/updates', authenticate, addUpdate);
 router.put('/:id', authenticate, updateLiveUpdate);
+router.put('/:id/updates/:updateId', authenticate, editUpdate);
 
 // Admin only
 router.delete('/:id', authenticate, deleteLiveUpdate);

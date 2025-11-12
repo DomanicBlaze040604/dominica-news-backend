@@ -279,14 +279,16 @@ export const updateArticle = async (req: Request, res: Response) => {
       status,
       scheduledAt,
       isPinned,
+      isFeatured,
+      isBreaking,
       seoTitle,
       seoDescription,
-      ...otherFields
+      tags,
+      location,
+      language
     } = req.body;
 
-    const updateData: any = {
-      ...otherFields
-    };
+    const updateData: any = {};
 
     // Update basic fields
     if (title !== undefined) updateData.title = title;
@@ -307,6 +309,11 @@ export const updateArticle = async (req: Request, res: Response) => {
     if (authorId !== undefined) updateData.author = authorId;
     if (status !== undefined) updateData.status = status;
     if (isPinned !== undefined) updateData.isPinned = isPinned;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+    if (isBreaking !== undefined) updateData.isBreaking = isBreaking;
+    if (tags !== undefined) updateData.tags = tags;
+    if (location !== undefined) updateData.location = location;
+    if (language !== undefined) updateData.language = language;
 
     // Handle SEO fields
     if (seoTitle !== undefined || seoDescription !== undefined) {
