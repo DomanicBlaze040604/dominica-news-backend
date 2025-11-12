@@ -390,10 +390,17 @@ export const updateArticle = async (req: Request, res: Response) => {
       data: article
     });
   } catch (error: any) {
+    console.error('❌ Error updating article:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({
       success: false,
       message: 'Error updating article',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
