@@ -80,8 +80,8 @@ export const createArticle = async (req: Request, res: Response) => {
       tags: tags || [],
       status: status || 'draft',
       seo: {
-        metaTitle: seoTitle,
-        metaDescription: seoDescription,
+        metaTitle: seoTitle ? seoTitle.substring(0, 60) : seoTitle,
+        metaDescription: seoDescription ? seoDescription.substring(0, 160) : seoDescription,
       },
       isBreaking: isBreaking || false,
       isFeatured: isFeatured || false,
@@ -317,10 +317,12 @@ export const updateArticle = async (req: Request, res: Response) => {
 
     // Handle SEO fields - update individual fields without overwriting
     if (seoTitle !== undefined) {
-      updateData['seo.metaTitle'] = seoTitle;
+      // Truncate to 60 characters if too long
+      updateData['seo.metaTitle'] = seoTitle ? seoTitle.substring(0, 60) : seoTitle;
     }
     if (seoDescription !== undefined) {
-      updateData['seo.metaDescription'] = seoDescription;
+      // Truncate to 160 characters if too long
+      updateData['seo.metaDescription'] = seoDescription ? seoDescription.substring(0, 160) : seoDescription;
     }
 
     // Handle slug - use provided slug or generate from title
