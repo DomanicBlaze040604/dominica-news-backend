@@ -99,7 +99,7 @@ const SettingsSchema: Schema = new Schema({
       type: String,
       validate: {
         validator: function(v: string) {
-          return !v || /^https?:\/\/(www\.)?youtube\.com\//.test(v);
+          return !v || /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(v);
         },
         message: 'Please provide a valid YouTube URL'
       }
