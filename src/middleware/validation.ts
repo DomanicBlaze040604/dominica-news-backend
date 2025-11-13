@@ -235,6 +235,18 @@ export const validateSettings = [
     .optional()
     .isBoolean()
     .withMessage('Maintenance mode must be true or false'),
+  body('homepageSectionOrder')
+    .optional()
+    .isIn(['latest-first', 'featured-first'])
+    .withMessage('Homepage section order must be either latest-first or featured-first'),
+  body('homepageCategories')
+    .optional()
+    .isArray()
+    .withMessage('Homepage categories must be an array'),
+  body('homepageCategories.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Each category ID must be a valid MongoDB ObjectId'),
 ];
 
 // Individual setting validation

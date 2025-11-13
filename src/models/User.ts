@@ -39,7 +39,8 @@ const userSchema = new Schema<IUser>(
     passwordHash: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [8, 'Password must be at least 8 characters long'],
+      // Note: minlength validation removed - password validation happens before hashing
+      // After hashing, password is always 60 characters
     },
     fullName: {
       type: String,
