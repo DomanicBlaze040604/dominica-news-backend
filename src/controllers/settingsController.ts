@@ -66,6 +66,12 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
     });
   }
 
+  console.log('📤 Sending settings to frontend:', {
+    homepageSectionOrder: (settings as any).homepageSectionOrder,
+    homepageCategories: (settings as any).homepageCategories,
+    homepageCategoriesLength: (settings as any).homepageCategories?.length
+  });
+
   res.json({
     success: true,
     data: settings
@@ -84,29 +90,34 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
     // Create new settings if none exist
     settings = await Settings.create(updateData);
   } else {
-    // Update existing settings
-    Object.assign(settings, updateData);
+    // Use findOneAndUpdate for atomic update
+    const updateFields: any = {};
     
-    // Explicitly handle homepage settings
     if (updateData.homepageSectionOrder !== undefined) {
-      (settings as any).homepageSectionOrder = updateData.homepageSectionOrder;
-      console.log('✅ Updated homepageSectionOrder:', updateData.homepageSectionOrder);
+      updateFields.homepageSectionOrder = updateData.homepageSectionOrder;
+      console.log('✅ Will update homepageSectionOrder:', updateData.homepageSectionOrder);
     }
     if (updateData.homepageCategories !== undefined) {
-      // Convert string IDs to ObjectIds if needed
-      const categoryIds = Array.isArray(updateData.homepageCategories) 
+      updateFields.homepageCategories = Array.isArray(updateData.homepageCategories) 
         ? updateData.homepageCategories 
         : [];
-      (settings as any).homepageCategories = categoryIds;
-      console.log('✅ Updated homepageCategories:', categoryIds);
+      console.log('✅ Will update homepageCategories:', updateFields.homepageCategories);
     }
     
-    // Mark fields as modified to ensure they're saved
-    settings.markModified('homepageSectionOrder');
-    settings.markModified('homepageCategories');
+    // Merge other fields
+    Object.keys(updateData).forEach(key => {
+      if (key !== 'homepageSectionOrder' && key !== 'homepageCategories') {
+        updateFields[key] = updateData[key];
+      }
+    });
     
-    await settings.save();
-    console.log('✅ Settings saved to database');
+    settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: updateFields },
+      { new: true, runValidators: false }
+    );
+    
+    console.log('✅ Settings updated in database');
   }
 
   // Fetch the updated settings to confirm

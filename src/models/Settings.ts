@@ -216,8 +216,7 @@ const SettingsSchema: Schema = new Schema({
     maxlength: [200, 'Copyright text cannot exceed 200 characters']
   },
   homepageCategories: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Category'
+    type: String  // Changed from ObjectId to String to match frontend
   }],
   homepageSectionOrder: {
     type: String,
@@ -231,6 +230,10 @@ const SettingsSchema: Schema = new Schema({
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
+      // Ensure homepageCategories is included
+      if (doc.homepageCategories) {
+        ret.homepageCategories = doc.homepageCategories;
+      }
       return ret;
     }
   }
