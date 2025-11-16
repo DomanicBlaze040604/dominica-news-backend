@@ -76,7 +76,7 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
   const updateData = req.body;
 
-  console.log('📝 Updating settings with data:', updateData);
+  console.log('📝 Updating settings with data:', JSON.stringify(updateData, null, 2));
 
   let settings = await Settings.findOne();
   
@@ -90,20 +90,36 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
     // Explicitly handle homepage settings
     if (updateData.homepageSectionOrder !== undefined) {
       (settings as any).homepageSectionOrder = updateData.homepageSectionOrder;
+      console.log('✅ Updated homepageSectionOrder:', updateData.homepageSectionOrder);
     }
     if (updateData.homepageCategories !== undefined) {
-      (settings as any).homepageCategories = updateData.homepageCategories;
+      // Convert string IDs to ObjectIds if needed
+      const categoryIds = Array.isArray(updateData.homepageCategories) 
+        ? updateData.homepageCategories 
+        : [];
+      (settings as any).homepageCategories = categoryIds;
+      console.log('✅ Updated homepageCategories:', categoryIds);
     }
     
+    // Mark fields as modified to ensure they're saved
+    settings.markModified('homepageSectionOrder');
+    settings.markModified('homepageCategories');
+    
     await settings.save();
+    console.log('✅ Settings saved to database');
   }
 
-  console.log('✅ Settings updated successfully');
+  // Fetch the updated settings to confirm
+  const updatedSettings = await Settings.findOne();
+  console.log('✅ Verified settings from DB:', {
+    homepageSectionOrder: (updatedSettings as any)?.homepageSectionOrder,
+    homepageCategories: (updatedSettings as any)?.homepageCategories
+  });
 
   res.json({
     success: true,
     message: 'Settings updated successfully',
-    data: settings
+    data: updatedSettings
   });
 });
 
