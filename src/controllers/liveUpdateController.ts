@@ -86,18 +86,24 @@ export const getLiveUpdateById = async (req: Request, res: Response) => {
   }
 };
 
-// Get active live updates for homepage
+// Get active live updates for homepage (includes paused for "Recently Lived")
 export const getActiveLiveUpdates = async (req: Request, res: Response) => {
   try {
     const { limit = 5 } = req.query;
 
+    // Include both active and paused live updates for homepage
     const liveUpdates = await LiveUpdate.find({
-      status: 'active',
+      status: { $in: ['active', 'paused'] },
       showOnHomepage: true
     })
       .populate('author', 'name avatar')
       .populate('category', 'name slug color')
-      .sort({ isSticky: -1, priority: -1, startedAt: -1 })
+      .sort({ 
+        status: 1, // Active first (alphabetically 'active' comes before 'paused')
+        isSticky: -1, 
+        priority: -1, 
+        startedAt: -1 
+      })
       .limit(parseInt(limit as string));
 
     res.json({
