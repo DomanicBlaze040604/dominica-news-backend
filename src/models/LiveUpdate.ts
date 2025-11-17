@@ -4,6 +4,8 @@ import { toDominicanTime } from '../utils/timezone';
 export interface ILiveUpdate extends Document {
   title: string;
   content: string;
+  coverImage?: string;
+  coverImageAlt?: string;
   type: 'breaking' | 'sports' | 'weather' | 'traffic' | 'election' | 'general';
   status: 'active' | 'paused' | 'ended';
   priority: number; // 1-5, 5 being highest
@@ -43,6 +45,14 @@ const LiveUpdateSchema: Schema = new Schema({
   content: {
     type: String,
     required: [true, 'Content is required'],
+    trim: true
+  },
+  coverImage: {
+    type: String,
+    trim: true
+  },
+  coverImageAlt: {
+    type: String,
     trim: true
   },
   type: {
