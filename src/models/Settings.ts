@@ -43,7 +43,11 @@ export interface ISettings extends Document {
   footerText?: string;
   copyrightText?: string;
   homepageCategories: mongoose.Types.ObjectId[];
-  homepageSectionOrder?: 'latest-first' | 'featured-first';
+  homepageSectionOrder?: 'latest-first' | 'featured-first' | string[];
+  showLiveNewsOnHomepage: boolean;
+  showBreakingNewsOnHomepage: boolean;
+  showFeaturedNewsOnHomepage: boolean;
+  showLatestNewsOnHomepage: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -219,9 +223,24 @@ const SettingsSchema: Schema = new Schema({
     type: String  // Changed from ObjectId to String to match frontend
   }],
   homepageSectionOrder: {
-    type: String,
-    enum: ['latest-first', 'featured-first'],
-    default: 'latest-first'
+    type: Schema.Types.Mixed,  // Allow both string and array
+    default: ['live-news', 'breaking-news', 'latest', 'featured']
+  },
+  showLiveNewsOnHomepage: {
+    type: Boolean,
+    default: true
+  },
+  showBreakingNewsOnHomepage: {
+    type: Boolean,
+    default: true
+  },
+  showFeaturedNewsOnHomepage: {
+    type: Boolean,
+    default: true
+  },
+  showLatestNewsOnHomepage: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true,

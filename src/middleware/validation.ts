@@ -237,16 +237,38 @@ export const validateSettings = [
     .withMessage('Maintenance mode must be true or false'),
   body('homepageSectionOrder')
     .optional()
-    .isIn(['latest-first', 'featured-first'])
-    .withMessage('Homepage section order must be either latest-first or featured-first'),
+    .custom((value) => {
+      // Allow both old format (string) and new format (array)
+      if (typeof value === 'string') {
+        return ['latest-first', 'featured-first'].includes(value);
+      }
+      if (Array.isArray(value)) {
+        const validSections = ['live-news', 'breaking-news', 'latest', 'featured'];
+        return value.every(section => validSections.includes(section));
+      }
+      return false;
+    })
+    .withMessage('Homepage section order must be either latest-first, featured-first, or an array of valid section IDs'),
   body('homepageCategories')
     .optional()
     .isArray()
     .withMessage('Homepage categories must be an array'),
-  body('homepageCategories.*')
+  body('showLiveNewsOnHomepage')
     .optional()
-    .isMongoId()
-    .withMessage('Each category ID must be a valid MongoDB ObjectId'),
+    .isBoolean()
+    .withMessage('Show live news on homepage must be true or false'),
+  body('showBreakingNewsOnHomepage')
+    .optional()
+    .isBoolean()
+    .withMessage('Show breaking news on homepage must be true or false'),
+  body('showFeaturedNewsOnHomepage')
+    .optional()
+    .isBoolean()
+    .withMessage('Show featured news on homepage must be true or false'),
+  body('showLatestNewsOnHomepage')
+    .optional()
+    .isBoolean()
+    .withMessage('Show latest news on homepage must be true or false'),
 ];
 
 // Individual setting validation

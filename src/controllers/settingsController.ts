@@ -80,58 +80,94 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 
 // Update site settings (admin only)
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
-  const updateData = req.body;
+  try {
+    const updateData = req.body;
 
-  console.log('📝 Updating settings with data:', JSON.stringify(updateData, null, 2));
+    console.log('📝 Updating settings with data:', JSON.stringify(updateData, null, 2));
 
-  let settings = await Settings.findOne();
-  
-  if (!settings) {
-    // Create new settings if none exist
-    settings = await Settings.create(updateData);
-  } else {
-    // Use findOneAndUpdate for atomic update
-    const updateFields: any = {};
+    let settings = await Settings.findOne();
     
-    if (updateData.homepageSectionOrder !== undefined) {
-      updateFields.homepageSectionOrder = updateData.homepageSectionOrder;
-      console.log('✅ Will update homepageSectionOrder:', updateData.homepageSectionOrder);
+    if (!settings) {
+      // Create new settings if none exist
+      console.log('Creating new settings document...');
+      settings = new Settings({
+        siteName: 'Dominica News',
+        siteDescription: 'Your trusted source for news and information about Dominica'
+      });
     }
+    
+    // Update fields directly on the document
+    if (updateData.homepageSectionOrder !== undefined) {
+      (settings as any).homepageSectionOrder = updateData.homepageSectionOrder;
+      console.log('✅ Set homepageSectionOrder:', updateData.homepageSectionOrder);
+    }
+    
     if (updateData.homepageCategories !== undefined) {
-      updateFields.homepageCategories = Array.isArray(updateData.homepageCategories) 
+      (settings as any).homepageCategories = Array.isArray(updateData.homepageCategories) 
         ? updateData.homepageCategories 
         : [];
-      console.log('✅ Will update homepageCategories:', updateFields.homepageCategories);
+      console.log('✅ Set homepageCategories:', (settings as any).homepageCategories);
     }
     
-    // Merge other fields
+    if (updateData.showLiveNewsOnHomepage !== undefined) {
+      (settings as any).showLiveNewsOnHomepage = updateData.showLiveNewsOnHomepage;
+      console.log('✅ Set showLiveNewsOnHomepage:', updateData.showLiveNewsOnHomepage);
+    }
+    
+    if (updateData.showBreakingNewsOnHomepage !== undefined) {
+      (settings as any).showBreakingNewsOnHomepage = updateData.showBreakingNewsOnHomepage;
+      console.log('✅ Set showBreakingNewsOnHomepage:', updateData.showBreakingNewsOnHomepage);
+    }
+    
+    if (updateData.showFeaturedNewsOnHomepage !== undefined) {
+      (settings as any).showFeaturedNewsOnHomepage = updateData.showFeaturedNewsOnHomepage;
+      console.log('✅ Set showFeaturedNewsOnHomepage:', updateData.showFeaturedNewsOnHomepage);
+    }
+    
+    if (updateData.showLatestNewsOnHomepage !== undefined) {
+      (settings as any).showLatestNewsOnHomepage = updateData.showLatestNewsOnHomepage;
+      console.log('✅ Set showLatestNewsOnHomepage:', updateData.showLatestNewsOnHomepage);
+    }
+    
+    // Update other fields
     Object.keys(updateData).forEach(key => {
-      if (key !== 'homepageSectionOrder' && key !== 'homepageCategories') {
-        updateFields[key] = updateData[key];
+      if (!['homepageSectionOrder', 'homepageCategories', 'showLiveNewsOnHomepage', 
+            'showBreakingNewsOnHomepage', 'showFeaturedNewsOnHomepage', 'showLatestNewsOnHomepage'].includes(key)) {
+        (settings as any)[key] = updateData[key];
       }
     });
     
-    settings = await Settings.findOneAndUpdate(
-      {},
-      { $set: updateFields },
-      { new: true, runValidators: false }
-    );
+    // Save with validation disabled
+    await settings.save({ validateBeforeSave: false });
+    console.log('✅ Settings saved to database');
+
+    // Fetch the updated settings to confirm
+    const updatedSettings = await Settings.findOne();
+    console.log('✅ Verified settings from DB:', {
+      homepageSectionOrder: (updatedSettings as any)?.homepageSectionOrder,
+      homepageCategories: (updatedSettings as any)?.homepageCategories,
+      showLiveNewsOnHomepage: (updatedSettings as any)?.showLiveNewsOnHomepage,
+      showBreakingNewsOnHomepage: (updatedSettings as any)?.showBreakingNewsOnHomepage,
+      showFeaturedNewsOnHomepage: (updatedSettings as any)?.showFeaturedNewsOnHomepage,
+      showLatestNewsOnHomepage: (updatedSettings as any)?.showLatestNewsOnHomepage
+    });
+
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      data: updatedSettings
+    });
+  } catch (error: any) {
+    console.error('❌ Error updating settings:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
-    console.log('✅ Settings updated in database');
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update settings',
+      error: error.toString()
+    });
   }
-
-  // Fetch the updated settings to confirm
-  const updatedSettings = await Settings.findOne();
-  console.log('✅ Verified settings from DB:', {
-    homepageSectionOrder: (updatedSettings as any)?.homepageSectionOrder,
-    homepageCategories: (updatedSettings as any)?.homepageCategories
-  });
-
-  res.json({
-    success: true,
-    message: 'Settings updated successfully',
-    data: updatedSettings
-  });
 });
 
 // Get social media links only (public endpoint)
